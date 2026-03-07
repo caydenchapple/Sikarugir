@@ -1,0 +1,51 @@
+[
+  {
+    "version": "11.3",
+    "variant": "Staging",
+    "downloadURL": "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.3/wine-staging-11.3-osx64.tar.xz",
+    "supportedArch": ["win64", "win32"],
+    "minMacOSVersion": "13.0"
+  },
+  {
+    "version": "11.3",
+    "variant": "Vanilla",
+    "downloadURL": "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.3/wine-devel-11.3-osx64.tar.xz",
+    "supportedArch": ["win64", "win32"],
+    "minMacOSVersion": "13.0"
+  },
+  {
+    "version": "11.2",
+    "variant": "Staging",
+    "downloadURL": "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.2/wine-staging-11.2-osx64.tar.xz",
+    "supportedArch": ["win64", "win32"],
+    "minMacOSVersion": "13.0"
+  },
+  {
+    "version": "11.0",
+    "variant": "Vanilla",
+    "downloadURL": "https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.0/wine-devel-11.0-osx64.tar.xz",
+    "supportedArch": ["win64", "win32"],
+    "minMacOSVersion": "13.0"
+  },
+  {
+    "version": "10.0",
+    "variant": "Staging",
+    "downloadURL": "https://github.com/Gcenx/macOS_Wine_builds/releases/download/10.0/wine-staging-10.0-osx64.tar.xz",
+    "supportedArch": ["win64", "win32"],
+    "minMacOSVersion": "13.0"
+  },
+  {
+    "version": "24.0.7",
+    "variant": "CrossOver",
+    "downloadURL": "https://github.com/Gcenx/winecx/releases/download/crossover-24.0.7/Wine-crossover-24.0.7-osx64.tar.xz",
+    "supportedArch": ["win64", "win32"],
+    "minMacOSVersion": "13.0"
+  },
+  {
+    "version": "9.0-GPTK",
+    "variant": "GPTK",
+    "downloadURL": "https://github.com/Gcenx/macOS_Wine_builds/releases/download/9.0/wine-9.0-osx64.tar.xz",
+    "supportedArch": ["win64"],
+    "minMacOSVersion": "14.0"
+  }
+]

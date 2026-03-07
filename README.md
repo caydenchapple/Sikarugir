@@ -1,6 +1,6 @@
-# Sikarugir
-A wrapper project that's the successor to Wineskin\
-This project supports *macOS 10.15.4* or later.
+# Sikarugir / MacWineRunner
+A wrapper project that's the successor to Wineskin — and home of **MacWineRunner**, an open-source CrossOver clone for macOS (Intel + Apple Silicon M-series).\
+This project supports *macOS 10.15.4* or later. MacWineRunner requires *macOS 13 Ventura* or later.
 
 <br>
 
@@ -55,6 +55,72 @@ This project supports *macOS 10.15.4* or later.
 > - [Windows Defender detects Occamy.c trojan in steam proton 5.0 folder](https://github.com/ValveSoftware/Proton/issues/3593)
 
 <br>
+
+---
+
+## MacWineRunner
+
+MacWineRunner is a native Swift + SwiftUI GUI tool for running Windows applications and games on macOS — both Intel and Apple Silicon (M-series). It lives in the `MacWineRunner/` folder of this repository.
+
+### Requirements
+
+| | Minimum |
+|---|---|
+| macOS | 13 Ventura |
+| Xcode | 15+ (or Swift 5.9 toolchain) |
+| Apple Silicon | Rosetta 2 recommended for x86_64 Wine engines |
+
+### Build from source
+
+```bash
+# Clone the repo
+git clone https://github.com/Sikarugir-App/Sikarugir.git
+cd Sikarugir/MacWineRunner
+
+# Build (debug)
+swift build
+
+# Build release
+swift build -c release
+
+# Run directly
+swift run MacWineRunner
+```
+
+Or open `MacWineRunner/Package.swift` in Xcode and press **Run**.
+
+### Architecture
+
+```
+MacWineRunner/
+├── Package.swift
+└── Sources/MacWineRunner/
+    ├── App/                  Entry point (@main)
+    ├── Models/               Bottle, WineEngine, GraphicsBackend
+    ├── Services/             SystemDetector, BottleManager, WineManager,
+    │                         EngineDownloader, ProcessRunner
+    └── Views/                ContentView, BottleListView, BottleDetailView,
+                              InstallWizardView, EngineManagerView, SettingsView
+```
+
+### Supported Graphics Backends
+
+| Backend | DirectX | Platform | Notes |
+|---|---|---|---|
+| D3DMetal (GPTK) | D3D 11 & 12 | Apple Silicon + macOS 14+ | Closed-source, restrictive license |
+| DXMT | D3D 10 & 11 | macOS 14+ | Metal-native |
+| DXVK | D3D 9/10/11 | macOS 13+ | Via MoltenVK / Vulkan |
+| VKD3D-Proton | D3D 12 | macOS 13+ | Via MoltenVK / Vulkan |
+| WineD3D | D3D ≤ 11 | macOS 13+ | Built-in software renderer |
+
+### First-time setup
+
+1. Launch MacWineRunner.
+2. Go to **Engines** → download a Wine engine (e.g. *Staging 9.21*).
+3. Go to **Bottles** → press **⇧⌘N** to create a new bottle, picking your engine and backend.
+4. In the bottle detail, press **Install App…** and select your `.exe` or `.msi` installer.
+
+---
 
 ## Components that fall under LGPL-2.1 license
 - `Configure.app` (modified version of  `Wineskin.app`)

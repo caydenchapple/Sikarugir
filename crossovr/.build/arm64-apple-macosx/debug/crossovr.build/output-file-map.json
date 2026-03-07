@@ -1,0 +1,159 @@
+{
+  "": {
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/master.swiftdeps"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/App/MacWineRunnerApp.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/MacWineRunnerApp.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/MacWineRunnerApp.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/MacWineRunnerApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/MacWineRunnerApp.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/MacWineRunnerApp.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/Bottle.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/Bottle.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/Bottle.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/Bottle~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/Bottle.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/Bottle.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/GraphicsBackend.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GraphicsBackend.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GraphicsBackend.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GraphicsBackend~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GraphicsBackend.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GraphicsBackend.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsApp.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsApp.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsApp.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsApp.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsApp.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WineEngine.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineEngine.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineEngine.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineEngine~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineEngine.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineEngine.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppCatalogManager.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppCatalogManager.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppCatalogManager.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppCatalogManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppCatalogManager.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppCatalogManager.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppUpdateService.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppUpdateService.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppUpdateService.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppUpdateService~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppUpdateService.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppUpdateService.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/BottleManager.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleManager.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleManager.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleManager.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleManager.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/EngineDownloader.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineDownloader.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineDownloader.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineDownloader~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineDownloader.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineDownloader.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/ProcessRunner.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ProcessRunner.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ProcessRunner.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ProcessRunner~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ProcessRunner.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ProcessRunner.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/SystemDetector.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SystemDetector.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SystemDetector.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SystemDetector~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SystemDetector.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SystemDetector.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WineManager.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineManager.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineManager.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineManager.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineManager.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/AppInstallSheet.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppInstallSheet.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppInstallSheet.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppInstallSheet~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppInstallSheet.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppInstallSheet.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/BottleDetailView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleDetailView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleDetailView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleDetailView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleDetailView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleDetailView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/BottleListView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleListView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleListView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleListView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleListView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleListView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/ContentView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ContentView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ContentView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ContentView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ContentView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ContentView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/EngineManagerView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineManagerView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineManagerView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineManagerView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineManagerView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineManagerView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/GamesView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GamesView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GamesView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GamesView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GamesView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GamesView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/HomeView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/HomeView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/HomeView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/HomeView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/HomeView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/HomeView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/InstallWizardView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/InstallWizardView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/InstallWizardView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/InstallWizardView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/InstallWizardView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/InstallWizardView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/SettingsView.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView.dia"
+  },
+  "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/DerivedSources/resource_bundle_accessor.swift": {
+    "dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/resource_bundle_accessor.d",
+    "object": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/resource_bundle_accessor.swift.o",
+    "swiftmodule": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/resource_bundle_accessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/resource_bundle_accessor.swiftdeps",
+    "diagnostics": "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/resource_bundle_accessor.dia"
+  }
+}
