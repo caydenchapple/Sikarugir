@@ -96,14 +96,19 @@ final class WindowsVMManager: ObservableObject {
         guard !runningVMIDs.contains(vm.id) else { return }
         do {
             var effectiveVM = vm
+            var installISOPath: String?
             if !effectiveVM.hasCompletedInstall {
-                effectiveVM = try ensureLocalInstallISO(for: effectiveVM)
+                installISOPath = try ensureLocalInstallISO(for: effectiveVM)
+                if let installISOPath {
+                    effectiveVM.isoPath = installISOPath
+                }
             }
 
             guard FileManager.default.fileExists(atPath: effectiveVM.diskImagePath) else {
                 throw NSError(domain: "WindowsVMManager", code: 4, userInfo: [NSLocalizedDescriptionKey: "VM disk image not found."])
             }
-            if !effectiveVM.hasCompletedInstall && !FileManager.default.fileExists(atPath: effectiveVM.isoPath) {
+            if !effectiveVM.hasCompletedInstall &&
+                (installISOPath == nil || !FileManager.default.fileExists(atPath: installISOPath!)) {
                 throw NSError(domain: "WindowsVMManager", code: 5, userInfo: [NSLocalizedDescriptionKey: "Windows ISO not found for installation boot."])
             }
             let qemu = try locateQEMU()
@@ -117,9 +122,9 @@ final class WindowsVMManager: ObservableObject {
                 "-bios", uefiFirmware,
                 // Force native macOS display output so VM is not headless.
                 "-display", "cocoa,show-cursor=on",
-                "-drive", "file=\(effectiveVM.diskImagePath),if=virtio,format=raw",
-                // ramfb is broadly compatible for UEFI/installer rendering.
-                "-device", "ramfb",
+                // Use explicit drive IDs + device wiring for reliable boot ordering on ARM virt machine.
+                "-drive", "if=none,id=vdisk,file=\(effectiveVM.diskImagePath),format=raw",
+                "-device", "virtio-blk-pci,drive=vdisk,bootindex=1",
                 "-device", "qemu-xhci",
                 "-device", "usb-kbd",
                 "-device", "usb-tablet",
@@ -128,7 +133,19 @@ final class WindowsVMManager: ObservableObject {
 
             // Use ISO as installation media until user marks install complete.
             if !effectiveVM.hasCompletedInstall {
-                args += ["-cdrom", effectiveVM.isoPath]
+                // Installer path: maximize compatibility and guaranteed video output.
+                args += ["-device", "ramfb"]
+                // Attach ISO through SCSI CD so UEFI sees it as bootable media.
+                args += ["-device", "virtio-scsi-pci,id=scsi0"]
+                args += ["-drive", "if=none,id=cdrom,media=cdrom,readonly=on,file=\(installISOPath!)"]
+                args += ["-device", "scsi-cd,drive=cdrom,bootindex=0"]
+                // First boot should go straight to Windows installer media.
+                args += ["-boot", "order=d,menu=on"]
+            } else {
+                // Runtime path: non-GL virtio GPU works on QEMU builds without OpenGL support.
+                args += ["-device", "virtio-gpu-pci"]
+                // After install, boot from VM disk by default.
+                args += ["-boot", "order=c,menu=on"]
             }
 
             let runner = ProcessRunner(
@@ -243,7 +260,7 @@ final class WindowsVMManager: ObservableObject {
         )
     }
 
-    private func ensureLocalInstallISO(for vm: WindowsVM) throws -> WindowsVM {
+    private func ensureLocalInstallISO(for vm: WindowsVM) throws -> String {
         let source = URL(fileURLWithPath: vm.isoPath)
         guard FileManager.default.fileExists(atPath: source.path) else {
             throw NSError(
@@ -256,19 +273,23 @@ final class WindowsVMManager: ObservableObject {
         let localISO = vm.folderURL.appendingPathComponent("install.iso")
         let fm = FileManager.default
 
-        if source.path != localISO.path {
-            if !fm.fileExists(atPath: localISO.path) {
-                try fm.createDirectory(at: vm.folderURL, withIntermediateDirectories: true)
-                try fm.copyItem(at: source, to: localISO)
+        // Always prefer per-VM install media path to avoid lock contention with Downloads ISO.
+        if !fm.fileExists(atPath: localISO.path) {
+            try fm.createDirectory(at: vm.folderURL, withIntermediateDirectories: true)
+            if source.path == localISO.path {
+                throw NSError(
+                    domain: "WindowsVMManager",
+                    code: 8,
+                    userInfo: [NSLocalizedDescriptionKey: "VM install ISO is missing at \(localISO.path). Re-select ISO."]
+                )
             }
-
-            update(vm.id) { $0.isoPath = localISO.path }
-            var copy = vm
-            copy.isoPath = localISO.path
-            return copy
+            try fm.copyItem(at: source, to: localISO)
         }
 
-        return vm
+        if vm.isoPath != localISO.path {
+            update(vm.id) { $0.isoPath = localISO.path }
+        }
+        return localISO.path
     }
 }
 
