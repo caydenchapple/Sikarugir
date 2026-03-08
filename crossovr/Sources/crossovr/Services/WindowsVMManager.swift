@@ -234,6 +234,22 @@ final class WindowsVMManager: ObservableObject {
         }
     }
 
+    func deleteVM(_ vm: WindowsVM) throws {
+        let current = vms.first(where: { $0.id == vm.id }) ?? vm
+        stop(current)
+        if FileManager.default.fileExists(atPath: current.folderURL.path) {
+            try FileManager.default.removeItem(at: current.folderURL)
+        }
+        vms.removeAll { $0.id == current.id }
+        runningRunners.removeValue(forKey: current.id)
+        runningVMIDs.remove(current.id)
+        launchDiagnostics.removeValue(forKey: current.id)
+        autoRecoveryAttempts.removeValue(forKey: current.id)
+        if lastRecoveredVMID == current.id {
+            lastRecoveredVMID = nil
+        }
+    }
+
     func diskSizeBytes(for vm: WindowsVM) -> Int64 {
         (try? vm.diskURL.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
     }

@@ -4,6 +4,7 @@ struct RealWindowsView: View {
     @StateObject private var vmManager = WindowsVMManager.shared
     @State private var selectedVMID: UUID?
     @State private var showSetup = false
+    @State private var pendingDeleteVM: WindowsVM?
 
     private var selectedVM: WindowsVM? {
         vmManager.vms.first(where: { $0.id == selectedVMID }) ?? vmManager.vms.first
@@ -21,6 +22,42 @@ struct RealWindowsView: View {
         .navigationTitle("Real Windows")
         .sheet(isPresented: $showSetup) {
             VMSetupView(onCreate: createVM)
+        }
+        .confirmationDialog(
+            "Delete this Real Windows VM?",
+            isPresented: Binding(
+                get: { pendingDeleteVM != nil },
+                set: { if !$0 { pendingDeleteVM = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete VM", role: .destructive) {
+                guard let vm = pendingDeleteVM else { return }
+                do {
+                    try vmManager.deleteVM(vm)
+                    selectedVMID = vmManager.vms.first?.id
+                } catch {
+                    vmManager.lastErrorMessage = error.localizedDescription
+                }
+                pendingDeleteVM = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeleteVM = nil
+            }
+        } message: {
+            if let vm = pendingDeleteVM {
+                let diskSize = ByteCountFormatter.string(
+                    fromByteCount: vmManager.diskSizeBytes(for: vm),
+                    countStyle: .file
+                )
+                Text("""
+                This permanently removes the VM disk and configuration.
+                Disk: \(vm.diskURL.path)
+                Size: \(diskSize)
+                """)
+            } else {
+                Text("This permanently removes the VM disk and configuration.")
+            }
         }
         .alert("VM Error", isPresented: isErrorPresented) {
             Button("OK", role: .cancel) {}
@@ -134,6 +171,14 @@ struct RealWindowsView: View {
                         }
                     } label: {
                         Label("Recreate VM", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isRunning)
+
+                    Button(role: .destructive) {
+                        pendingDeleteVM = vm
+                    } label: {
+                        Label("Delete VM", systemImage: "trash")
                     }
                     .buttonStyle(.bordered)
                     .disabled(isRunning)
