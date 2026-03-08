@@ -11,6 +11,8 @@ struct VMSetupView: View {
     @State private var diskGB: Int = 96
     @State private var cpuCount: Int = 4
     @State private var memoryMB: Int = 8192
+    @State private var showAdvanced = false
+    @AppStorage("defaultWindowsISOPath") private var defaultWindowsISOPath: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -25,24 +27,34 @@ struct VMSetupView: View {
             Divider()
 
             Form {
-                Section("VM") {
+                Section("Quick Setup") {
                     TextField("Name", text: $name)
                         .textFieldStyle(.roundedBorder)
 
                     HStack {
-                        Text(isoURL?.lastPathComponent ?? "No ISO selected")
+                        Text(isoURL?.lastPathComponent ?? "Choose Windows 11 ISO (one-time)")
                             .foregroundStyle(isoURL == nil ? .secondary : .primary)
                             .lineLimit(1)
                             .truncationMode(.middle)
                         Spacer()
                         Button("Choose ISO…") { chooseISO() }
                     }
+
+                    Text("After you choose ISO once, future VMs only need name + Create.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
-                Section("Resources") {
-                    Stepper("Disk: \(diskGB) GB", value: $diskGB, in: 40...512, step: 8)
-                    Stepper("CPU Cores: \(cpuCount)", value: $cpuCount, in: 2...16, step: 1)
-                    Stepper("Memory: \(memoryMB / 1024) GB", value: $memoryMB, in: 4096...32768, step: 1024)
+                Section {
+                    Toggle("Customize resources (advanced)", isOn: $showAdvanced)
+                }
+
+                if showAdvanced {
+                    Section("Resources") {
+                        Stepper("Disk: \(diskGB) GB", value: $diskGB, in: 40...512, step: 8)
+                        Stepper("CPU Cores: \(cpuCount)", value: $cpuCount, in: 2...16, step: 1)
+                        Stepper("Memory: \(memoryMB / 1024) GB", value: $memoryMB, in: 4096...32768, step: 1024)
+                    }
                 }
             }
             .formStyle(.grouped)
@@ -69,6 +81,15 @@ struct VMSetupView: View {
             .padding(16)
         }
         .frame(width: 560, height: 420)
+        .onAppear {
+            // Auto-reuse last chosen ISO for one-click VM creation.
+            if isoURL == nil, !defaultWindowsISOPath.isEmpty {
+                let url = URL(fileURLWithPath: defaultWindowsISOPath)
+                if FileManager.default.fileExists(atPath: url.path) {
+                    isoURL = url
+                }
+            }
+        }
     }
 
     private func chooseISO() {
@@ -79,6 +100,9 @@ struct VMSetupView: View {
         panel.allowedContentTypes = [UTType(filenameExtension: "iso") ?? .data]
         if panel.runModal() == .OK {
             isoURL = panel.url
+            if let p = panel.url?.path {
+                defaultWindowsISOPath = p
+            }
         }
     }
 }
