@@ -135,10 +135,14 @@ final class WindowsVMManager: ObservableObject {
             if !effectiveVM.hasCompletedInstall {
                 // Installer path: maximize compatibility and guaranteed video output.
                 args += ["-device", "ramfb"]
-                // Attach ISO as USB install media for broadest EDK2 visibility on ARM QEMU.
-                args += ["-drive", "if=none,id=install,media=cdrom,readonly=on,file=\(installISOPath!)"]
-                args += ["-device", "usb-storage,drive=install,bootindex=0"]
-                // Keep boot menu enabled, but rely on bootindex for deterministic media priority.
+                // Attach ISO as a plain block device; EDK2 on ARM detects this more reliably.
+                args += ["-drive", "if=none,id=install,file=\(installISOPath!),format=raw,readonly=on"]
+                args += ["-device", "virtio-blk-pci,drive=install,bootindex=0"]
+                // Attach a tiny FAT startup drive so UEFI shell auto-runs installer entry.
+                let startupDir = try ensureStartupScriptDirectory(for: effectiveVM)
+                args += ["-drive", "if=none,id=startup,file=fat:rw:\(startupDir.path),format=raw,readonly=on"]
+                args += ["-device", "virtio-blk-pci,drive=startup,bootindex=3"]
+                // Keep boot menu enabled, rely on bootindex for deterministic media priority.
                 args += ["-boot", "menu=on"]
             } else {
                 // Runtime path: non-GL virtio GPU works on QEMU builds without OpenGL support.
@@ -289,6 +293,23 @@ final class WindowsVMManager: ObservableObject {
             update(vm.id) { $0.isoPath = localISO.path }
         }
         return localISO.path
+    }
+
+    private func ensureStartupScriptDirectory(for vm: WindowsVM) throws -> URL {
+        let startupDir = vm.folderURL.appendingPathComponent("uefi-startup")
+        try FileManager.default.createDirectory(at: startupDir, withIntermediateDirectories: true)
+
+        let script = """
+        echo -off
+        map -r
+        fs0:\\EFI\\BOOT\\BOOTAA64.EFI
+        fs1:\\EFI\\BOOT\\BOOTAA64.EFI
+        fs2:\\EFI\\BOOT\\BOOTAA64.EFI
+        fs3:\\EFI\\BOOT\\BOOTAA64.EFI
+        """
+        let file = startupDir.appendingPathComponent("startup.nsh")
+        try script.write(to: file, atomically: true, encoding: .utf8)
+        return startupDir
     }
 }
 
