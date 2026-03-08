@@ -221,15 +221,28 @@ struct InstallWizardView: View {
             VStack(spacing: 20) {
                 // Status header
                 HStack(spacing: 12) {
-                    Image(systemName: installSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(installSuccess ? .green : .red)
+                    Group {
+                        if installSuccess && installError == nil {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        } else if installSuccess && installError != nil {
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        } else {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
+                        }
+                    }
+                    .font(.system(size: 40))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(installSuccess ? "Installation Complete" : "Installation Failed")
-                            .font(.title3.bold())
-                        Text(installSuccess
-                             ? "Installed into \"\(bottle.name)\""
-                             : (installError ?? "An unknown error occurred."))
+                        Group {
+                            if installSuccess && installError == nil {
+                                Text("Installation Complete")
+                            } else if installSuccess && installError != nil {
+                                Text("Installer Finished with Warning")
+                            } else {
+                                Text("Installation Failed")
+                            }
+                        }
+                        .font(.title3.bold())
+                        Text(installError ?? "Installed into \"\(bottle.name)\"")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
@@ -483,15 +496,22 @@ struct InstallWizardView: View {
                     case .exit(let code):
                         await MainActor.run {
                             outputLines.append("Exited with code \(code)")
-                            installSuccess = code == 0
-                            if code != 0 {
-                                installError = "Installer exited with code \(code). Check the log above."
+                            // Many online installers (e.g. SteamSetup.exe) launch a
+                            // bootstrapper and exit with code 1 as normal behaviour.
+                            // Treat any exit as "potentially succeeded" and always scan
+                            // for newly installed executables. Only surface the exit code
+                            // as a warning — not a hard failure — so the user can still
+                            // add the app to their library if files were installed.
+                            let hardFailure = code < 0  // -1 means Wine itself failed to start
+                            installSuccess = !hardFailure
+                            if code > 0 {
+                                installError = "Installer exited with code \(code) — this may be normal for online installers. Check below for installed apps."
+                            } else if hardFailure {
+                                installError = "Wine failed to start. Check that your engine is installed correctly."
                             }
                             currentStep = .done
-                            if installSuccess {
-                                bottleManager.refreshInstalledApps(for: liveBottle)
-                                scanForExecutables()
-                            }
+                            bottleManager.refreshInstalledApps(for: liveBottle)
+                            scanForExecutables()
                         }
                     }
                 }
