@@ -488,7 +488,10 @@ struct InstallWizardView: View {
                                 installError = "Installer exited with code \(code). Check the log above."
                             }
                             currentStep = .done
-                            if installSuccess { scanForExecutables() }
+                            if installSuccess {
+                                bottleManager.refreshInstalledApps(for: liveBottle)
+                                scanForExecutables()
+                            }
                         }
                     }
                 }

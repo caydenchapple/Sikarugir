@@ -81,6 +81,27 @@ final class BottleManager: ObservableObject {
         try bottles[idx].save()
     }
 
+    /// Re-scan a bottle for launchable programs and merge into installedApps.
+    func refreshInstalledApps(for bottle: Bottle) {
+        guard let idx = bottles.firstIndex(where: { $0.id == bottle.id }) else { return }
+        var copy = bottles[idx]
+        sanitizeInstalledApps(for: &copy)
+        autoImportSteamEntries(into: &copy)
+        if copy.installedApps.isEmpty, let primary = detectPrimaryExecutable(in: copy) {
+            copy.installedApps.append(
+                InstalledApp(
+                    name: primary.deletingPathExtension().lastPathComponent,
+                    exePath: primary.path,
+                    sfSymbol: "app.fill",
+                    iconColor: "#5A6EAA",
+                    isGame: false
+                )
+            )
+        }
+        bottles[idx] = copy
+        try? bottles[idx].save()
+    }
+
     /// Removes an installed-app shortcut from the given bottle and persists the change.
     func removeApp(_ app: InstalledApp, from bottle: Bottle) throws {
         guard let idx = bottles.firstIndex(where: { $0.id == bottle.id }) else { return }
@@ -133,24 +154,8 @@ final class BottleManager: ObservableObject {
                     bottle.customRootPath = url.path
                 }
 
-                // Keep library entries clean: remove stale executables and dedupe by path.
-                var seenPaths: Set<String> = []
-                bottle.installedApps = bottle.installedApps.filter { app in
-                    let key = app.exePath.lowercased()
-                    guard !seenPaths.contains(key) else { return false }
-                    seenPaths.insert(key)
-                    // Remove known bad auto-detected system entries from prior versions.
-                    if key.contains("/windows media player/wmplayer.exe") ||
-                        key.hasSuffix("/iexplore.exe") ||
-                        key.hasSuffix("/explorer.exe") {
-                        return false
-                    }
-                    if app.exePath.lowercased().hasPrefix("steam://rungameid/") { return true }
-                    return FileManager.default.fileExists(atPath: app.exePath)
-                }
-
+                sanitizeInstalledApps(for: &bottle)
                 autoImportSteamEntries(into: &bottle)
-                // If nothing is pinned yet, auto-detect a primary executable matching bottle name.
                 if bottle.installedApps.isEmpty, let primary = detectPrimaryExecutable(in: bottle) {
                     bottle.installedApps.append(
                         InstalledApp(
@@ -297,6 +302,23 @@ final class BottleManager: ObservableObject {
         guard let match = regex.firstMatch(in: text, options: [], range: range), match.numberOfRanges > 1 else { return nil }
         guard let r = Range(match.range(at: 1), in: text) else { return nil }
         return String(text[r])
+    }
+
+    private func sanitizeInstalledApps(for bottle: inout Bottle) {
+        var seenPaths: Set<String> = []
+        bottle.installedApps = bottle.installedApps.filter { app in
+            let key = app.exePath.lowercased()
+            guard !seenPaths.contains(key) else { return false }
+            seenPaths.insert(key)
+            // Remove known bad auto-detected system entries from prior versions.
+            if key.contains("/windows media player/wmplayer.exe") ||
+                key.hasSuffix("/iexplore.exe") ||
+                key.hasSuffix("/explorer.exe") {
+                return false
+            }
+            if app.exePath.lowercased().hasPrefix("steam://rungameid/") { return true }
+            return FileManager.default.fileExists(atPath: app.exePath)
+        }
     }
 
     private func detectPrimaryExecutable(in bottle: Bottle) -> URL? {

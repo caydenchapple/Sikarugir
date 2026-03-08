@@ -249,6 +249,20 @@ struct BottleDetailView: View {
                 }
                 .disabled(engine == nil || isRunning)
 
+                Button {
+                    openWindowsDesktop()
+                } label: {
+                    Label("Open Windows Desktop", systemImage: "desktopcomputer")
+                }
+                .disabled(engine == nil || isRunning)
+
+                Button {
+                    refreshInstalledApps()
+                } label: {
+                    Label("Refresh Apps", systemImage: "arrow.clockwise")
+                }
+                .disabled(isRunning)
+
                 Spacer()
 
                 Button {
@@ -474,6 +488,38 @@ struct BottleDetailView: View {
         Task {
             await runWineProgram("explorer", engine: engine)
         }
+    }
+
+    private func openWindowsDesktop() {
+        guard let engine = engine else { return }
+        showOutputConsole = true
+        isRunning = true
+        outputLines.append("Opening Windows desktop shell…")
+        Task {
+            do {
+                let stream = try WineManager.shared.launchWindowsDesktop(
+                    bottle: editedBottle,
+                    engine: engine
+                )
+                for await output in stream {
+                    switch output {
+                    case .stdout(let line): await MainActor.run { outputLines.append(line) }
+                    case .stderr(let line): await MainActor.run { outputLines.append("ERR: \(line)") }
+                    case .exit(let code): await MainActor.run { outputLines.append("Exited (\(code))") }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    outputLines.append("Error: \(error.localizedDescription)")
+                }
+            }
+            await MainActor.run { isRunning = false }
+        }
+    }
+
+    private func refreshInstalledApps() {
+        bottleManager.refreshInstalledApps(for: editedBottle)
+        outputLines.append("Refreshed installed apps for \(editedBottle.name).")
     }
 
     private func runWineProgram(_ program: String, engine: WineEngine) async {

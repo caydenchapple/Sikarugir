@@ -142,6 +142,24 @@ final class WineManager: ObservableObject {
         )
     }
 
+    /// Opens a Windows shell desktop (explorer) inside the bottle.
+    @discardableResult
+    func launchWindowsDesktop(
+        bottle: Bottle,
+        engine: WineEngine
+    ) throws -> AsyncStream<ProcessOutput> {
+        let explorerPath = bottle.driveCURL.appendingPathComponent("windows/explorer.exe")
+        if FileManager.default.fileExists(atPath: explorerPath.path) {
+            return try launchExecutable(at: explorerPath, bottle: bottle, engine: engine)
+        }
+        // Fallback to explorer command resolved by Wine.
+        return try launchExecutable(
+            at: URL(fileURLWithPath: "explorer"),
+            bottle: bottle,
+            engine: engine
+        )
+    }
+
     // MARK: - Run winetricks verb
 
     /// Runs a winetricks verb inside a bottle (e.g. `vcrun2019`, `dotnet48`).

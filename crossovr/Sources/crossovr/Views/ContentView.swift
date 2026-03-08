@@ -6,6 +6,7 @@ import AppKit
 enum AppRoute: Hashable {
     case home
     case games
+    case realWindows
     case bottle(Bottle)
     case engines
     case settings
@@ -43,6 +44,8 @@ struct ContentView: View {
             GamesView()
                 .environmentObject(bottleManager)
                 .environmentObject(engineDownloader)
+        case .realWindows:
+            RealWindowsView()
         case .bottle(let b):
             BottleDetailView(bottle: b)
                 .id(b.id)
@@ -84,6 +87,10 @@ struct CrossOvrSidebar: View {
                 // Games library
                 Label("Games", systemImage: "gamecontroller.fill")
                     .tag(AppRoute.games)
+                    .padding(.vertical, 2)
+
+                Label("Real Windows", systemImage: "desktopcomputer")
+                    .tag(AppRoute.realWindows)
                     .padding(.vertical, 2)
 
                 // Bottles section

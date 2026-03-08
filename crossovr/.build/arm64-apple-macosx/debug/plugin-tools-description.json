@@ -67,6 +67,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsVM.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WineEngine.swift"
         },
         {
@@ -92,6 +96,10 @@
         {
           "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/SystemDetector.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WindowsVMManager.swift"
         },
         {
           "kind" : "file",
@@ -131,7 +139,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/RealWindowsView.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/SettingsView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/VMSetupView.swift"
         },
         {
           "kind" : "file",
@@ -158,6 +174,7 @@
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/Bottle.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GraphicsBackend.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsApp.swift.o",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsVM.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineEngine.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppCatalogManager.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppUpdateService.swift.o",
@@ -165,6 +182,7 @@
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/EngineDownloader.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/ProcessRunner.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SystemDetector.swift.o",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsVMManager.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineManager.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/AppInstallSheet.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/BottleDetailView.swift.o",
@@ -174,7 +192,9 @@
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/GamesView.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/HomeView.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/InstallWizardView.swift.o",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/RealWindowsView.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView.swift.o",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/VMSetupView.swift.o",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/resource_bundle_accessor.swift.o"
       ],
       "otherArguments" : [
@@ -252,6 +272,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsVM.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WineEngine.swift.o"
         },
         {
@@ -277,6 +301,10 @@
         {
           "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SystemDetector.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsVMManager.swift.o"
         },
         {
           "kind" : "file",
@@ -316,7 +344,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/RealWindowsView.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/VMSetupView.swift.o"
         },
         {
           "kind" : "file",
@@ -333,6 +369,7 @@
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/Bottle.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/GraphicsBackend.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsApp.swift",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsVM.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WineEngine.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppCatalogManager.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppUpdateService.swift",
@@ -340,6 +377,7 @@
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/EngineDownloader.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/ProcessRunner.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/SystemDetector.swift",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WindowsVMManager.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WineManager.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/AppInstallSheet.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/BottleDetailView.swift",
@@ -349,7 +387,9 @@
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/GamesView.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/HomeView.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/InstallWizardView.swift",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/RealWindowsView.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/SettingsView.swift",
+        "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/VMSetupView.swift",
         "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/DerivedSources/resource_bundle_accessor.swift"
       ],
       "tempsPath" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build",
@@ -371,6 +411,7 @@
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/Bottle.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/GraphicsBackend.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsApp.swift",
+      "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsVM.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WineEngine.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppCatalogManager.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppUpdateService.swift",
@@ -378,6 +419,7 @@
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/EngineDownloader.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/ProcessRunner.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/SystemDetector.swift",
+      "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WindowsVMManager.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WineManager.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/AppInstallSheet.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/BottleDetailView.swift",
@@ -387,7 +429,9 @@
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/GamesView.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/HomeView.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/InstallWizardView.swift",
+      "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/RealWindowsView.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/SettingsView.swift",
+      "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/VMSetupView.swift",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/DerivedSources/resource_bundle_accessor.swift",
       "-I",
       "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/Modules",
@@ -504,6 +548,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsVM.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WineEngine.swift"
         },
         {
@@ -529,6 +577,10 @@
         {
           "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/SystemDetector.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WindowsVMManager.swift"
         },
         {
           "kind" : "file",
@@ -568,7 +620,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/RealWindowsView.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/SettingsView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/VMSetupView.swift"
         },
         {
           "kind" : "file",
@@ -650,6 +710,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/RealWindowsView.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/SettingsView.swift.o"
         },
         {
@@ -658,7 +722,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/VMSetupView.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsVM.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/debug/crossovr.build/WindowsVMManager.swift.o"
         },
         {
           "kind" : "file",
