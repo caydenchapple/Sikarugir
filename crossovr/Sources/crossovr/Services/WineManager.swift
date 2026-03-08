@@ -132,13 +132,17 @@ final class WineManager: ObservableObject {
                 at: steamExe,
                 bottle: bottle,
                 engine: engine,
-                extraArgs: ["-applaunch", appID]
+                extraArgs: steamLaunchArgs(appID: appID)
             )
         }
+        // Launching Steam itself directly — CEF sandbox must be disabled under Wine.
+        let exeURL = URL(fileURLWithPath: app.exePath)
+        let extraArgs = isSteamExecutable(exeURL) ? ["-no-cef-sandbox"] : []
         return try launchExecutable(
-            at: URL(fileURLWithPath: app.exePath),
+            at: exeURL,
             bottle: bottle,
-            engine: engine
+            engine: engine,
+            extraArgs: extraArgs
         )
     }
 
@@ -221,6 +225,14 @@ final class WineManager: ObservableObject {
     private func steamGameID(from value: String) -> String? {
         guard value.lowercased().hasPrefix("steam://rungameid/") else { return nil }
         return value.components(separatedBy: "/").last?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func isSteamExecutable(_ url: URL) -> Bool {
+        url.deletingPathExtension().lastPathComponent.lowercased() == "steam"
+    }
+
+    private func steamLaunchArgs(appID: String) -> [String] {
+        ["-no-cef-sandbox", "-applaunch", appID]
     }
 
     private func resolveSteamExecutable(in bottle: Bottle) throws -> URL {

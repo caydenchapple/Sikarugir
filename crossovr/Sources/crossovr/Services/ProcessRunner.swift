@@ -105,6 +105,7 @@ final class ProcessRunner {
             do {
                 try task.run()
             } catch {
+                continuation.yield(.exit(-1))
                 continuation.finish()
             }
         }
