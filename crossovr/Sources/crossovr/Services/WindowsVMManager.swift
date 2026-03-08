@@ -135,17 +135,16 @@ final class WindowsVMManager: ObservableObject {
             if !effectiveVM.hasCompletedInstall {
                 // Installer path: maximize compatibility and guaranteed video output.
                 args += ["-device", "ramfb"]
-                // Attach ISO through SCSI CD so UEFI sees it as bootable media.
-                args += ["-device", "virtio-scsi-pci,id=scsi0"]
-                args += ["-drive", "if=none,id=cdrom,media=cdrom,readonly=on,file=\(installISOPath!)"]
-                args += ["-device", "scsi-cd,drive=cdrom,bootindex=0"]
-                // First boot should go straight to Windows installer media.
-                args += ["-boot", "order=d,menu=on"]
+                // Attach ISO as USB install media for broadest EDK2 visibility on ARM QEMU.
+                args += ["-drive", "if=none,id=install,media=cdrom,readonly=on,file=\(installISOPath!)"]
+                args += ["-device", "usb-storage,drive=install,bootindex=0"]
+                // Keep boot menu enabled, but rely on bootindex for deterministic media priority.
+                args += ["-boot", "menu=on"]
             } else {
                 // Runtime path: non-GL virtio GPU works on QEMU builds without OpenGL support.
                 args += ["-device", "virtio-gpu-pci"]
                 // After install, boot from VM disk by default.
-                args += ["-boot", "order=c,menu=on"]
+                args += ["-boot", "menu=on"]
             }
 
             let runner = ProcessRunner(
