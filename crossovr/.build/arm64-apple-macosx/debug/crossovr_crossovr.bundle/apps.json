@@ -55,7 +55,7 @@
     "category": "Game Launchers",
     "sfSymbol": "cloud.fill",
     "iconColor": "#1B2838",
-    "winetricksVerbs": ["steam"],
+    "winetricksVerbs": ["vcrun2019", "d3dcompiler_47"],
     "defaultBackend": "DXVK",
     "installerURL": "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
   },
