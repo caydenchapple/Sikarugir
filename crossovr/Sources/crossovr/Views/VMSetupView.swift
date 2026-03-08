@@ -40,6 +40,15 @@ struct VMSetupView: View {
                         Button("Choose ISO…") { chooseISO() }
                     }
 
+                    if isoURL == nil {
+                        Button {
+                            openWindowsISODownloadPage()
+                        } label: {
+                            Label("Download Windows ISO", systemImage: "arrow.down.circle")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
                     Text("After you choose ISO once, future VMs only need name + Create.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -104,6 +113,11 @@ struct VMSetupView: View {
                 defaultWindowsISOPath = p
             }
         }
+    }
+
+    private func openWindowsISODownloadPage() {
+        guard let url = URL(string: "https://www.microsoft.com/software-download/windows11") else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 
