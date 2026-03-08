@@ -95,21 +95,31 @@ final class WindowsVMManager: ObservableObject {
     func start(_ vm: WindowsVM) {
         guard !runningVMIDs.contains(vm.id) else { return }
         do {
-            guard FileManager.default.fileExists(atPath: vm.diskImagePath) else {
+            var effectiveVM = vm
+            if !effectiveVM.hasCompletedInstall {
+                effectiveVM = try ensureLocalInstallISO(for: effectiveVM)
+            }
+
+            guard FileManager.default.fileExists(atPath: effectiveVM.diskImagePath) else {
                 throw NSError(domain: "WindowsVMManager", code: 4, userInfo: [NSLocalizedDescriptionKey: "VM disk image not found."])
             }
-            if !vm.hasCompletedInstall && !FileManager.default.fileExists(atPath: vm.isoPath) {
+            if !effectiveVM.hasCompletedInstall && !FileManager.default.fileExists(atPath: effectiveVM.isoPath) {
                 throw NSError(domain: "WindowsVMManager", code: 5, userInfo: [NSLocalizedDescriptionKey: "Windows ISO not found for installation boot."])
             }
             let qemu = try locateQEMU()
+            let uefiFirmware = try locateUEFIFirmware()
             var args: [String] = [
                 "-accel", "hvf",
                 "-machine", "virt,highmem=on",
                 "-cpu", "host",
-                "-smp", "\(max(2, vm.cpuCount))",
-                "-m", "\(max(2048, vm.memoryMB))",
-                "-drive", "file=\(vm.diskImagePath),if=virtio,format=raw",
-                "-device", "virtio-gpu-pci",
+                "-smp", "\(max(2, effectiveVM.cpuCount))",
+                "-m", "\(max(2048, effectiveVM.memoryMB))",
+                "-bios", uefiFirmware,
+                // Force native macOS display output so VM is not headless.
+                "-display", "cocoa,show-cursor=on",
+                "-drive", "file=\(effectiveVM.diskImagePath),if=virtio,format=raw",
+                // ramfb is broadly compatible for UEFI/installer rendering.
+                "-device", "ramfb",
                 "-device", "qemu-xhci",
                 "-device", "usb-kbd",
                 "-device", "usb-tablet",
@@ -117,8 +127,8 @@ final class WindowsVMManager: ObservableObject {
             ]
 
             // Use ISO as installation media until user marks install complete.
-            if !vm.hasCompletedInstall {
-                args += ["-cdrom", vm.isoPath]
+            if !effectiveVM.hasCompletedInstall {
+                args += ["-cdrom", effectiveVM.isoPath]
             }
 
             let runner = ProcessRunner(
@@ -212,6 +222,53 @@ final class WindowsVMManager: ObservableObject {
             code: 3,
             userInfo: [NSLocalizedDescriptionKey: "qemu-system-aarch64 not found. Install QEMU (brew install qemu)."]
         )
+    }
+
+    private func locateUEFIFirmware() throws -> String {
+        let candidates = [
+            "/opt/homebrew/share/qemu/edk2-aarch64-code.fd",
+            "/opt/homebrew/share/qemu/edk2-arm-code.fd",
+            "/opt/homebrew/share/qemu/QEMU_EFI.fd",
+            "/usr/local/share/qemu/edk2-aarch64-code.fd",
+            "/usr/local/share/qemu/edk2-arm-code.fd",
+            "/usr/local/share/qemu/QEMU_EFI.fd"
+        ]
+        if let existing = candidates.first(where: { FileManager.default.fileExists(atPath: $0) }) {
+            return existing
+        }
+        throw NSError(
+            domain: "WindowsVMManager",
+            code: 7,
+            userInfo: [NSLocalizedDescriptionKey: "ARM UEFI firmware not found for QEMU. Reinstall QEMU with Homebrew (brew install qemu)."]
+        )
+    }
+
+    private func ensureLocalInstallISO(for vm: WindowsVM) throws -> WindowsVM {
+        let source = URL(fileURLWithPath: vm.isoPath)
+        guard FileManager.default.fileExists(atPath: source.path) else {
+            throw NSError(
+                domain: "WindowsVMManager",
+                code: 6,
+                userInfo: [NSLocalizedDescriptionKey: "Windows ISO not found at \(source.path)."]
+            )
+        }
+
+        let localISO = vm.folderURL.appendingPathComponent("install.iso")
+        let fm = FileManager.default
+
+        if source.path != localISO.path {
+            if !fm.fileExists(atPath: localISO.path) {
+                try fm.createDirectory(at: vm.folderURL, withIntermediateDirectories: true)
+                try fm.copyItem(at: source, to: localISO)
+            }
+
+            update(vm.id) { $0.isoPath = localISO.path }
+            var copy = vm
+            copy.isoPath = localISO.path
+            return copy
+        }
+
+        return vm
     }
 }
 
