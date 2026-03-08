@@ -9,63 +9,20 @@ struct RealWindowsView: View {
         vmManager.vms.first(where: { $0.id == selectedVMID }) ?? vmManager.vms.first
     }
 
-    var body: some View {
-        NavigationSplitView {
-            List(selection: $selectedVMID) {
-                Section("REAL WINDOWS VMS") {
-                    ForEach(vmManager.vms) { vm in
-                        Label(vm.name, systemImage: vm.state == .running ? "display.and.arrow.down" : "desktopcomputer")
-                            .tag(vm.id)
-                    }
-                }
-            }
-            .listStyle(.sidebar)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showSetup = true
-                    } label: {
-                        Label("New VM", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            if let vm = selectedVM {
-                vmDetail(vm)
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "desktopcomputer")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.secondary)
-                    Text("No Windows VM")
-                        .font(.title3.bold())
-                    Text("Create a VM to install real Windows 11.")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-        .navigationTitle("Real Windows")
-        .sheet(isPresented: $showSetup) {
-            VMSetupView { name, iso, diskGB, cpu, ram in
-                do {
-                    let vm = try vmManager.createVM(
-                        name: name,
-                        isoURL: iso,
-                        diskSizeGB: diskGB,
-                        cpuCount: cpu,
-                        memoryMB: ram
-                    )
-                    selectedVMID = vm.id
-                } catch {
-                    vmManager.lastErrorMessage = error.localizedDescription
-                }
-            }
-        }
-        .alert("VM Error", isPresented: Binding(
+    private var isErrorPresented: Binding<Bool> {
+        Binding(
             get: { vmManager.lastErrorMessage != nil },
             set: { if !$0 { vmManager.lastErrorMessage = nil } }
-        )) {
+        )
+    }
+
+    var body: some View {
+        NavigationSplitView { sidebar } detail: { detail }
+        .navigationTitle("Real Windows")
+        .sheet(isPresented: $showSetup) {
+            VMSetupView(onCreate: createVM)
+        }
+        .alert("VM Error", isPresented: isErrorPresented) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(vmManager.lastErrorMessage ?? "Unknown error")
@@ -76,10 +33,55 @@ struct RealWindowsView: View {
                 selectedVMID = vmManager.vms.first?.id
             }
         }
+        .onChange(of: vmManager.lastRecoveredVMID) { recovered in
+            if let recovered {
+                selectedVMID = recovered
+            }
+        }
+    }
+
+    private var sidebar: some View {
+        List(selection: $selectedVMID) {
+            Section("REAL WINDOWS VMS") {
+                ForEach(vmManager.vms) { vm in
+                    Label(vm.name, systemImage: vm.state == .running ? "display.and.arrow.down" : "desktopcomputer")
+                        .tag(vm.id)
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showSetup = true
+                } label: {
+                    Label("New VM", systemImage: "plus")
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var detail: some View {
+        if let vm = selectedVM {
+            vmDetail(vm)
+        } else {
+            VStack(spacing: 12) {
+                Image(systemName: "desktopcomputer")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.secondary)
+                Text("No Windows VM")
+                    .font(.title3.bold())
+                Text("Create a VM to install real Windows 11.")
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     @ViewBuilder
     private func vmDetail(_ vm: WindowsVM) -> some View {
+        let isRunning = vmManager.runningVMIDs.contains(vm.id)
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
@@ -99,7 +101,7 @@ struct RealWindowsView: View {
                         Label("Start", systemImage: "play.fill")
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(vmManager.runningVMIDs.contains(vm.id))
+                    .disabled(isRunning)
 
                     Button {
                         vmManager.stop(vm)
@@ -107,7 +109,7 @@ struct RealWindowsView: View {
                         Label("Stop", systemImage: "stop.fill")
                     }
                     .buttonStyle(.bordered)
-                    .disabled(!vmManager.runningVMIDs.contains(vm.id))
+                    .disabled(!isRunning)
 
                     Button {
                         vmManager.resume(vm)
@@ -115,6 +117,26 @@ struct RealWindowsView: View {
                         Label("Resume", systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.bordered)
+
+                    Button {
+                        if let repaired = vmManager.repairBoot(vm, recreateIfNeeded: false) {
+                            selectedVMID = repaired.id
+                        }
+                    } label: {
+                        Label("Repair Boot", systemImage: "wrench.and.screwdriver")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isRunning)
+
+                    Button(role: .destructive) {
+                        if let recreated = vmManager.repairBoot(vm, recreateIfNeeded: true) {
+                            selectedVMID = recreated.id
+                        }
+                    } label: {
+                        Label("Recreate VM", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isRunning)
                 }
 
                 GroupBox("Diagnostics") {
@@ -161,6 +183,16 @@ struct RealWindowsView: View {
                             }
                             .buttonStyle(.bordered)
                         }
+
+                        if let details = vmManager.launchDiagnostics[vm.id] {
+                            Divider()
+                            Text("Last Launch Profile")
+                                .font(.caption.bold())
+                            Text(details)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
                     }
                 }
 
@@ -169,6 +201,21 @@ struct RealWindowsView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(24)
+        }
+    }
+
+    private func createVM(name: String, iso: URL, diskGB: Int, cpu: Int, ram: Int) {
+        do {
+            let vm = try vmManager.createVM(
+                name: name,
+                isoURL: iso,
+                diskSizeGB: diskGB,
+                cpuCount: cpu,
+                memoryMB: ram
+            )
+            selectedVMID = vm.id
+        } catch {
+            vmManager.lastErrorMessage = error.localizedDescription
         }
     }
 

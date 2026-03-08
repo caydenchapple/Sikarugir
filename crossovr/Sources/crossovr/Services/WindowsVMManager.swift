@@ -8,8 +8,11 @@ final class WindowsVMManager: ObservableObject {
     @Published private(set) var vms: [WindowsVM] = []
     @Published private(set) var runningVMIDs: Set<UUID> = []
     @Published var lastErrorMessage: String?
+    @Published private(set) var launchDiagnostics: [UUID: String] = [:]
+    @Published var lastRecoveredVMID: UUID?
 
     private var runningRunners: [UUID: ProcessRunner] = [:]
+    private var autoRecoveryAttempts: [UUID: Int] = [:]
 
     private let vmsRoot: URL = {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -20,6 +23,18 @@ final class WindowsVMManager: ObservableObject {
 
     private init() {
         loadAllVMs()
+    }
+
+    private struct UEFIFirmwarePaths {
+        let codePath: String
+        let varsTemplatePath: String
+    }
+
+    private struct VMLaunchPlan {
+        let vm: WindowsVM
+        let qemuPath: String
+        let args: [String]
+        let diagnostics: String
     }
 
     // MARK: - Public
@@ -40,6 +55,10 @@ final class WindowsVMManager: ObservableObject {
             // Safety: process state can't be trusted across app restarts.
             if vm.state == .running {
                 vm.state = .stopped
+                try? save(vm)
+            }
+            if vm.bootProfileVersion < 2 {
+                vm.bootProfileVersion = 2
                 try? save(vm)
             }
             // Sanity checks for persisted paths.
@@ -95,75 +114,23 @@ final class WindowsVMManager: ObservableObject {
     func start(_ vm: WindowsVM) {
         guard !runningVMIDs.contains(vm.id) else { return }
         do {
-            var effectiveVM = vm
-            var installISOPath: String?
-            if !effectiveVM.hasCompletedInstall {
-                installISOPath = try ensureLocalInstallISO(for: effectiveVM)
-                if let installISOPath {
-                    effectiveVM.isoPath = installISOPath
-                }
-            }
-
-            guard FileManager.default.fileExists(atPath: effectiveVM.diskImagePath) else {
-                throw NSError(domain: "WindowsVMManager", code: 4, userInfo: [NSLocalizedDescriptionKey: "VM disk image not found."])
-            }
-            if !effectiveVM.hasCompletedInstall &&
-                (installISOPath == nil || !FileManager.default.fileExists(atPath: installISOPath!)) {
-                throw NSError(domain: "WindowsVMManager", code: 5, userInfo: [NSLocalizedDescriptionKey: "Windows ISO not found for installation boot."])
-            }
-            let qemu = try locateQEMU()
-            let uefiFirmware = try locateUEFIFirmware()
-            var args: [String] = [
-                "-accel", "hvf",
-                "-machine", "virt,highmem=on",
-                "-cpu", "host",
-                "-smp", "\(max(2, effectiveVM.cpuCount))",
-                "-m", "\(max(2048, effectiveVM.memoryMB))",
-                "-bios", uefiFirmware,
-                // Force native macOS display output so VM is not headless.
-                "-display", "cocoa,show-cursor=on",
-                // Use explicit drive IDs + device wiring for reliable boot ordering on ARM virt machine.
-                "-drive", "if=none,id=vdisk,file=\(effectiveVM.diskImagePath),format=raw",
-                "-device", "virtio-blk-pci,drive=vdisk,bootindex=1",
-                "-device", "qemu-xhci",
-                "-device", "usb-kbd",
-                "-device", "usb-tablet",
-                "-nic", "user,model=virtio-net-pci"
-            ]
-
-            // Use ISO as installation media until user marks install complete.
-            if !effectiveVM.hasCompletedInstall {
-                // Installer path: maximize compatibility and guaranteed video output.
-                args += ["-device", "ramfb"]
-                // Attach ISO as a plain block device; EDK2 on ARM detects this more reliably.
-                args += ["-drive", "if=none,id=install,file=\(installISOPath!),format=raw,readonly=on"]
-                args += ["-device", "virtio-blk-pci,drive=install,bootindex=0"]
-                // Attach a tiny FAT startup drive so UEFI shell auto-runs installer entry.
-                let startupDir = try ensureStartupScriptDirectory(for: effectiveVM)
-                args += ["-drive", "if=none,id=startup,file=fat:rw:\(startupDir.path),format=raw,readonly=on"]
-                args += ["-device", "virtio-blk-pci,drive=startup,bootindex=3"]
-                // Keep boot menu enabled, rely on bootindex for deterministic media priority.
-                args += ["-boot", "menu=on"]
-            } else {
-                // Runtime path: non-GL virtio GPU works on QEMU builds without OpenGL support.
-                args += ["-device", "virtio-gpu-pci"]
-                // After install, boot from VM disk by default.
-                args += ["-boot", "menu=on"]
-            }
+            let plan = try buildLaunchPlan(for: vm)
+            launchDiagnostics[vm.id] = plan.diagnostics
 
             let runner = ProcessRunner(
-                executableURL: URL(fileURLWithPath: qemu),
-                arguments: args
+                executableURL: URL(fileURLWithPath: plan.qemuPath),
+                arguments: plan.args
             )
             runningRunners[vm.id] = runner
             runningVMIDs.insert(vm.id)
 
             Task {
+                var vmToRetry: WindowsVM?
                 do {
                     _ = try await runner.run()
                 } catch {
                     await MainActor.run {
-                        self.lastErrorMessage = error.localizedDescription
+                        vmToRetry = self.handleLaunchFailure(error, for: plan.vm)
                     }
                 }
                 await MainActor.run {
@@ -172,13 +139,19 @@ final class WindowsVMManager: ObservableObject {
                     self.update(vm.id) {
                         $0.state = .stopped
                     }
+                    if let vmToRetry {
+                        self.lastErrorMessage = "Auto-repaired boot profile. Retrying..."
+                        self.start(vmToRetry)
+                    }
                 }
             }
 
             update(vm.id) {
                 $0.state = .running
                 $0.lastBootedAt = Date()
+                $0.bootProfileVersion = 2
             }
+            autoRecoveryAttempts[vm.id] = 0
         } catch {
             lastErrorMessage = error.localizedDescription
         }
@@ -198,6 +171,60 @@ final class WindowsVMManager: ObservableObject {
 
     func markInstallComplete(_ vm: WindowsVM, completed: Bool) {
         update(vm.id) { $0.hasCompletedInstall = completed }
+    }
+
+    /// Resets firmware boot state and local installer mapping for a VM.
+    @discardableResult
+    func repairBoot(_ vm: WindowsVM, recreateIfNeeded: Bool = false) -> WindowsVM? {
+        do {
+            let current = vms.first(where: { $0.id == vm.id }) ?? vm
+            try resetBootArtifacts(for: current)
+            if !current.hasCompletedInstall {
+                _ = try ensureLocalInstallISO(for: current, forceRefresh: true)
+            }
+            lastRecoveredVMID = current.id
+            lastErrorMessage = "Boot profile repaired for \(current.name)."
+            return current
+        } catch {
+            if recreateIfNeeded {
+                do {
+                    let recreated = try recreateVM(vm)
+                    lastRecoveredVMID = recreated.id
+                    lastErrorMessage = "VM was recreated with a clean boot profile."
+                    return recreated
+                } catch {
+                    lastErrorMessage = "Failed to recreate VM: \(error.localizedDescription)"
+                    return nil
+                }
+            }
+            lastErrorMessage = "Boot repair failed: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    /// Recreates a VM with the same settings and clean firmware state.
+    @discardableResult
+    func recreateVM(_ vm: WindowsVM) throws -> WindowsVM {
+        let current = vms.first(where: { $0.id == vm.id }) ?? vm
+        stop(current)
+
+        let rescueISO = try prepareRecreateISO(from: current)
+        let diskGB = max(40, Int((diskSizeBytes(for: current) / 1024 / 1024 / 1024)))
+        let created = try createVM(
+            name: current.name,
+            isoURL: rescueISO,
+            diskSizeGB: diskGB,
+            cpuCount: current.cpuCount,
+            memoryMB: current.memoryMB
+        )
+
+        // Remove the old VM folder/state once replacement is created.
+        try? FileManager.default.removeItem(at: current.folderURL)
+        if let idx = vms.firstIndex(where: { $0.id == current.id }) {
+            vms.remove(at: idx)
+        }
+        autoRecoveryAttempts[current.id] = nil
+        return created
     }
 
     func revealDisk(_ vm: WindowsVM) {
@@ -229,6 +256,134 @@ final class WindowsVMManager: ObservableObject {
         try? save(vms[idx])
     }
 
+    private func buildLaunchPlan(for vm: WindowsVM) throws -> VMLaunchPlan {
+        var workingVM = vm
+        let installerISOPath = resolveInstallerISOPath(for: workingVM)
+
+        guard FileManager.default.fileExists(atPath: workingVM.diskImagePath) else {
+            throw NSError(domain: "WindowsVMManager", code: 4, userInfo: [NSLocalizedDescriptionKey: "VM disk image not found."])
+        }
+
+        if let installerISOPath {
+            workingVM.isoPath = installerISOPath
+        }
+
+        if !workingVM.hasCompletedInstall &&
+            (installerISOPath == nil || !FileManager.default.fileExists(atPath: installerISOPath!)) {
+            throw NSError(domain: "WindowsVMManager", code: 5, userInfo: [NSLocalizedDescriptionKey: "Windows ISO not found for installation boot."])
+        }
+
+        let qemu = try locateQEMU()
+        let firmware = try locateUEFIFirmware()
+        let varsPath = try ensurePerVMFirmwareVars(for: workingVM, templatePath: firmware.varsTemplatePath)
+
+        // Known-good UTM-like ARM launch profile with persistent firmware vars.
+        var args: [String] = [
+            "-accel", "hvf",
+            "-machine", "virt,highmem=on",
+            "-cpu", "host",
+            "-smp", "\(max(2, workingVM.cpuCount))",
+            "-m", "\(max(2048, workingVM.memoryMB))",
+            "-drive", "if=pflash,format=raw,readonly=on,file=\(firmware.codePath)",
+            "-drive", "if=pflash,format=raw,file=\(varsPath)",
+            "-display", "cocoa,show-cursor=on",
+            "-device", "qemu-xhci",
+            "-device", "usb-kbd",
+            "-device", "usb-tablet",
+            "-netdev", "user,id=net0",
+            "-device", "virtio-net-pci,netdev=net0",
+            "-drive", "if=none,id=system,file=\(workingVM.diskImagePath),format=raw",
+            "-device", "virtio-blk-pci,drive=system,bootindex=1"
+        ]
+
+        if workingVM.hasCompletedInstall {
+            args += ["-device", "virtio-gpu-pci"]
+            if let installerISOPath {
+                // Keep installer media attached as low-priority fallback so blank disks
+                // recover into setup instead of dropping to UEFI shell.
+                args += ["-drive", "if=none,id=installer,file=\(installerISOPath),media=cdrom,readonly=on"]
+                args += ["-device", "usb-storage,drive=installer,removable=true,bootindex=2"]
+            }
+            args += ["-boot", "menu=on"]
+        } else if let installerISOPath {
+            args += ["-device", "ramfb"]
+            args += ["-drive", "if=none,id=installer,file=\(installerISOPath),media=cdrom,readonly=on"]
+            args += ["-device", "usb-storage,drive=installer,removable=true,bootindex=0"]
+            args += ["-boot", "menu=on"]
+        }
+
+        let diagnostics = [
+            "QEMU: \(qemu)",
+            "Firmware code: \(firmware.codePath)",
+            "Firmware vars: \(varsPath)",
+            "Disk: \(workingVM.diskImagePath)",
+            "Installer ISO: \(installerISOPath ?? "<none>")",
+            "Args: \(args.joined(separator: " "))"
+        ].joined(separator: "\n")
+
+        return VMLaunchPlan(vm: workingVM, qemuPath: qemu, args: args, diagnostics: diagnostics)
+    }
+
+    private func resolveInstallerISOPath(for vm: WindowsVM) -> String? {
+        if let local = existingLocalInstallISO(for: vm) {
+            if vm.isoPath != local.path {
+                update(vm.id) { $0.isoPath = local.path }
+            }
+            return local.path
+        }
+
+        let source = URL(fileURLWithPath: vm.isoPath)
+        if FileManager.default.fileExists(atPath: source.path) {
+            return try? ensureLocalInstallISO(for: vm)
+        }
+
+        // Stored ISO path can become stale after repair/recreate cycles.
+        // Auto-discover a likely Windows ISO and relink this VM.
+        guard let fallbackISO = discoverFallbackWindowsISO() else { return nil }
+        update(vm.id) { $0.isoPath = fallbackISO.path }
+        return try? ensureLocalInstallISO(for: vm)
+    }
+
+    private func existingLocalInstallISO(for vm: WindowsVM) -> URL? {
+        let local = vm.folderURL.appendingPathComponent("install.iso")
+        guard FileManager.default.fileExists(atPath: local.path) else { return nil }
+        return local
+    }
+
+    private func handleLaunchFailure(_ error: Error, for vm: WindowsVM) -> WindowsVM? {
+        let message = error.localizedDescription
+        guard !vm.hasCompletedInstall else {
+            lastErrorMessage = message
+            return nil
+        }
+
+        let attempts = autoRecoveryAttempts[vm.id, default: 0]
+        guard attempts < 1, shouldAutoRecover(from: message) else {
+            lastErrorMessage = message
+            return nil
+        }
+        autoRecoveryAttempts[vm.id] = attempts + 1
+
+        guard let recovered = repairBoot(vm, recreateIfNeeded: true) else {
+            return nil
+        }
+        return recovered
+    }
+
+    private func shouldAutoRecover(from message: String) -> Bool {
+        let lowered = message.lowercased()
+        let signatures = [
+            "process exited with code 1",
+            "failed to lock byte",
+            "display output is not active",
+            "uefi",
+            "boot",
+            "cdrom",
+            "open gl support was not enabled"
+        ]
+        return signatures.contains(where: { lowered.contains($0) })
+    }
+
     private func locateQEMU() throws -> String {
         let candidates = [
             "/opt/homebrew/bin/qemu-system-aarch64",
@@ -244,26 +399,49 @@ final class WindowsVMManager: ObservableObject {
         )
     }
 
-    private func locateUEFIFirmware() throws -> String {
-        let candidates = [
+    private func locateUEFIFirmware() throws -> UEFIFirmwarePaths {
+        let codeCandidates = [
             "/opt/homebrew/share/qemu/edk2-aarch64-code.fd",
             "/opt/homebrew/share/qemu/edk2-arm-code.fd",
-            "/opt/homebrew/share/qemu/QEMU_EFI.fd",
             "/usr/local/share/qemu/edk2-aarch64-code.fd",
             "/usr/local/share/qemu/edk2-arm-code.fd",
             "/usr/local/share/qemu/QEMU_EFI.fd"
         ]
-        if let existing = candidates.first(where: { FileManager.default.fileExists(atPath: $0) }) {
-            return existing
+        let varsCandidates = [
+            "/opt/homebrew/share/qemu/edk2-arm-vars.fd",
+            "/opt/homebrew/share/qemu/edk2-aarch64-vars.fd",
+            "/usr/local/share/qemu/edk2-arm-vars.fd",
+            "/usr/local/share/qemu/edk2-aarch64-vars.fd"
+        ]
+
+        guard let code = codeCandidates.first(where: { FileManager.default.fileExists(atPath: $0) }) else {
+            throw NSError(
+                domain: "WindowsVMManager",
+                code: 7,
+                userInfo: [NSLocalizedDescriptionKey: "ARM UEFI firmware code not found for QEMU. Reinstall QEMU with Homebrew (brew install qemu)."]
+            )
         }
-        throw NSError(
-            domain: "WindowsVMManager",
-            code: 7,
-            userInfo: [NSLocalizedDescriptionKey: "ARM UEFI firmware not found for QEMU. Reinstall QEMU with Homebrew (brew install qemu)."]
-        )
+
+        guard let varsTemplate = varsCandidates.first(where: { FileManager.default.fileExists(atPath: $0) }) else {
+            throw NSError(
+                domain: "WindowsVMManager",
+                code: 9,
+                userInfo: [NSLocalizedDescriptionKey: "ARM UEFI vars template not found for QEMU. Reinstall QEMU with Homebrew (brew install qemu)."]
+            )
+        }
+
+        return UEFIFirmwarePaths(codePath: code, varsTemplatePath: varsTemplate)
     }
 
-    private func ensureLocalInstallISO(for vm: WindowsVM) throws -> String {
+    private func ensurePerVMFirmwareVars(for vm: WindowsVM, templatePath: String) throws -> String {
+        let varsPath = vm.folderURL.appendingPathComponent("UEFI_VARS.fd")
+        if !FileManager.default.fileExists(atPath: varsPath.path) {
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: templatePath), to: varsPath)
+        }
+        return varsPath.path
+    }
+
+    private func ensureLocalInstallISO(for vm: WindowsVM, forceRefresh: Bool = false) throws -> String {
         let source = URL(fileURLWithPath: vm.isoPath)
         guard FileManager.default.fileExists(atPath: source.path) else {
             throw NSError(
@@ -275,6 +453,10 @@ final class WindowsVMManager: ObservableObject {
 
         let localISO = vm.folderURL.appendingPathComponent("install.iso")
         let fm = FileManager.default
+
+        if forceRefresh, fm.fileExists(atPath: localISO.path) {
+            try fm.removeItem(at: localISO)
+        }
 
         // Always prefer per-VM install media path to avoid lock contention with Downloads ISO.
         if !fm.fileExists(atPath: localISO.path) {
@@ -295,21 +477,69 @@ final class WindowsVMManager: ObservableObject {
         return localISO.path
     }
 
-    private func ensureStartupScriptDirectory(for vm: WindowsVM) throws -> URL {
-        let startupDir = vm.folderURL.appendingPathComponent("uefi-startup")
-        try FileManager.default.createDirectory(at: startupDir, withIntermediateDirectories: true)
+    private func resetBootArtifacts(for vm: WindowsVM) throws {
+        let vars = vm.folderURL.appendingPathComponent("UEFI_VARS.fd")
+        let localISO = vm.folderURL.appendingPathComponent("install.iso")
+        if FileManager.default.fileExists(atPath: vars.path) {
+            try FileManager.default.removeItem(at: vars)
+        }
+        if FileManager.default.fileExists(atPath: localISO.path) {
+            try FileManager.default.removeItem(at: localISO)
+        }
+        autoRecoveryAttempts[vm.id] = nil
+    }
 
-        let script = """
-        echo -off
-        map -r
-        fs0:\\EFI\\BOOT\\BOOTAA64.EFI
-        fs1:\\EFI\\BOOT\\BOOTAA64.EFI
-        fs2:\\EFI\\BOOT\\BOOTAA64.EFI
-        fs3:\\EFI\\BOOT\\BOOTAA64.EFI
-        """
-        let file = startupDir.appendingPathComponent("startup.nsh")
-        try script.write(to: file, atomically: true, encoding: .utf8)
-        return startupDir
+    private func prepareRecreateISO(from vm: WindowsVM) throws -> URL {
+        let iso = URL(fileURLWithPath: vm.isoPath)
+        if !iso.path.hasPrefix(vm.folderURL.path), FileManager.default.fileExists(atPath: iso.path) {
+            return iso
+        }
+
+        let rescue = vmsRoot.appendingPathComponent("recovery-\(vm.id.uuidString).iso")
+        if FileManager.default.fileExists(atPath: iso.path) {
+            if FileManager.default.fileExists(atPath: rescue.path) {
+                try FileManager.default.removeItem(at: rescue)
+            }
+            try FileManager.default.copyItem(at: iso, to: rescue)
+            return rescue
+        }
+        if let fallback = discoverFallbackWindowsISO() {
+            return fallback
+        }
+        throw NSError(
+            domain: "WindowsVMManager",
+            code: 10,
+            userInfo: [NSLocalizedDescriptionKey: "Unable to locate installer ISO for VM recreation. Re-select ISO in New VM."]
+        )
+    }
+
+    private func discoverFallbackWindowsISO() -> URL? {
+        let fm = FileManager.default
+        let downloads = fm.urls(for: .downloadsDirectory, in: .userDomainMask).first
+        let searchRoots: [URL] = [downloads, vmsRoot].compactMap { $0 }
+        var candidates: [URL] = []
+
+        for root in searchRoots {
+            guard let items = try? fm.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            for url in items where url.pathExtension.lowercased() == "iso" {
+                let name = url.lastPathComponent.lowercased()
+                if name.contains("win") || name.contains("windows") || name.contains("arm") {
+                    candidates.append(url)
+                }
+            }
+        }
+
+        guard !candidates.isEmpty else { return nil }
+        return candidates.sorted { lhs, rhs in
+            let l = (try? lhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            let r = (try? rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            return l > r
+        }.first
     }
 }
 
