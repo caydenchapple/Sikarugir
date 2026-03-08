@@ -484,6 +484,13 @@ struct InstallWizardView: View {
 
         Task {
             do {
+                // Always initialise the Wine prefix before running any installer.
+                // Without this step the prefix directory is empty (no Windows
+                // registry, no drive_c structure) and installers fail silently.
+                await MainActor.run { outputLines.append("Initialising Wine prefix…") }
+                try await WineManager.shared.initPrefix(for: bottle, engine: engine)
+                await MainActor.run { outputLines.append("Prefix ready. Launching installer…") }
+
                 let stream = try WineManager.shared.launchExecutable(
                     at: exeURL, bottle: bottle, engine: engine, extraArgs: allArgs
                 )

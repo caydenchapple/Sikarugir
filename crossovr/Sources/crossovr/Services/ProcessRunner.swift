@@ -48,7 +48,9 @@ final class ProcessRunner {
     // MARK: - Async streaming run
 
     /// Runs the process and delivers output line-by-line via an AsyncStream.
-    func stream() throws -> AsyncStream<ProcessOutput> {
+    /// When `logURL` is supplied every line is also written to that file
+    /// (Whisky-style per-session log files under ~/Library/Logs/crossovr/).
+    func stream(logURL: URL? = nil) throws -> AsyncStream<ProcessOutput> {
         guard FileManager.default.fileExists(atPath: executableURL.path) else {
             throw ProcessRunnerError.executableNotFound(executableURL.path)
         }
@@ -72,6 +74,18 @@ final class ProcessRunner {
 
         self.process = task
 
+        // Open log file handle if requested (Whisky-style session logs).
+        let logHandle: FileHandle? = logURL.flatMap { url in
+            FileManager.default.createFile(atPath: url.path, contents: nil)
+            return try? FileHandle(forWritingTo: url)
+        }
+
+        func writeLine(_ line: String, prefix: String = "") {
+            guard let h = logHandle else { return }
+            let entry = (prefix.isEmpty ? line : "\(prefix) \(line)") + "\n"
+            h.write(Data(entry.utf8))
+        }
+
         return AsyncStream { continuation in
             // Stream stdout
             stdoutPipe.fileHandleForReading.readabilityHandler = { handle in
@@ -80,7 +94,10 @@ final class ProcessRunner {
                 if let text = String(data: data, encoding: .utf8) {
                     text.components(separatedBy: "\n")
                         .filter { !$0.isEmpty }
-                        .forEach { continuation.yield(.stdout($0)) }
+                        .forEach {
+                            writeLine($0)
+                            continuation.yield(.stdout($0))
+                        }
                 }
             }
 
@@ -91,13 +108,18 @@ final class ProcessRunner {
                 if let text = String(data: data, encoding: .utf8) {
                     text.components(separatedBy: "\n")
                         .filter { !$0.isEmpty }
-                        .forEach { continuation.yield(.stderr($0)) }
+                        .forEach {
+                            writeLine($0, prefix: "ERR:")
+                            continuation.yield(.stderr($0))
+                        }
                 }
             }
 
             task.terminationHandler = { process in
                 stdoutPipe.fileHandleForReading.readabilityHandler = nil
                 stderrPipe.fileHandleForReading.readabilityHandler = nil
+                writeLine("exit: \(process.terminationStatus)")
+                try? logHandle?.close()
                 continuation.yield(.exit(process.terminationStatus))
                 continuation.finish()
             }
@@ -105,6 +127,8 @@ final class ProcessRunner {
             do {
                 try task.run()
             } catch {
+                writeLine("exit: -1 (launch failed)")
+                try? logHandle?.close()
                 continuation.yield(.exit(-1))
                 continuation.finish()
             }
@@ -115,12 +139,12 @@ final class ProcessRunner {
 
     /// Runs the process to completion, returning all stdout/stderr as strings.
     @discardableResult
-    func run() async throws -> (stdout: String, stderr: String) {
+    func run(logURL: URL? = nil) async throws -> (stdout: String, stderr: String) {
         var stdoutLines: [String] = []
         var stderrLines: [String] = []
         var exitCode: Int32 = 0
 
-        for await output in try stream() {
+        for await output in try stream(logURL: logURL) {
             switch output {
             case .stdout(let line): stdoutLines.append(line)
             case .stderr(let line): stderrLines.append(line)

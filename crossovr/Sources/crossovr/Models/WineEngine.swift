@@ -39,20 +39,21 @@ struct WineEngine: Codable, Identifiable, Hashable {
             .appendingPathComponent(id)
     }
 
-    /// The `wine` binary within the installed engine bundle.
-    /// Gcenx macOS builds are packaged as .app bundles:
-    /// the binary lives at Contents/Resources/wine/bin/wine.
+    /// The `wine64` (or `wine`) binary within the installed engine bundle.
+    /// Prefer wine64 — the dedicated 64-bit loader — over the wine wrapper,
+    /// matching Whisky's approach which always invokes wine64 directly.
     var wineBinaryPath: URL {
-        // Primary location inside the .app-style bundle
+        // .app-style bundle (Gcenx / WhiskyWine): prefer wine64, fall back to wine
+        let bundled64 = localPath.appendingPathComponent("Contents/Resources/wine/bin/wine64")
+        if FileManager.default.fileExists(atPath: bundled64.path) { return bundled64 }
         let bundled = localPath.appendingPathComponent("Contents/Resources/wine/bin/wine")
         if FileManager.default.fileExists(atPath: bundled.path) { return bundled }
-        // Fallback: flat tarball layout (bin/wine or bin/wine64)
+        // Flat tarball layout
         let flatWine64 = localPath.appendingPathComponent("bin/wine64")
         if FileManager.default.fileExists(atPath: flatWine64.path) { return flatWine64 }
         let flatWine = localPath.appendingPathComponent("bin/wine")
         if FileManager.default.fileExists(atPath: flatWine.path) { return flatWine }
-        // Return the bundle path as default (will produce a clear error if missing)
-        return bundled
+        return bundled64
     }
 
     var wineServerBinaryPath: URL {

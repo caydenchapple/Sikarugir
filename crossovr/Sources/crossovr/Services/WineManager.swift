@@ -18,30 +18,41 @@ final class WineManager: ObservableObject {
         var env: [String: String] = ProcessInfo.processInfo.environment
 
         // Force the macOS native Wine driver (winemac.drv) instead of X11.
-        // When DISPLAY is set (inherited from the shell), Wine falls back to the X11
-        // driver which loses macOS clipboard, drag-and-drop, and IME integration.
-        // Unsetting it ensures winemac.drv is used, giving full Cmd+C/Cmd+V support.
+        // Unsetting DISPLAY ensures winemac.drv is used, giving full Cmd+C/Cmd+V support.
         env.removeValue(forKey: "DISPLAY")
 
         // Core Wine environment
-        env["WINEPREFIX"]   = bottle.prefixPath
-        env["WINEARCH"]     = bottle.arch.rawValue
-        env["WINE"]         = engine.wineBinaryPath.path
-        env["WINESERVER"]   = engine.wineServerBinaryPath.path
-        env["WINEDEBUG"]    = "-all"
+        env["WINEPREFIX"]  = bottle.prefixPath
+        env["WINEARCH"]    = bottle.arch.rawValue
+        env["WINE"]        = engine.wineBinaryPath.path
+        env["WINESERVER"]  = engine.wineServerBinaryPath.path
+
+        // Show fixme warnings but silence all other debug noise (matches Whisky).
+        // Using "-all" hides real errors; "fixme-all" keeps only fixme suppressions.
+        env["WINEDEBUG"]   = "fixme-all"
+
+        // Suppress GStreamer debug spam (Whisky technique).
+        env["GST_DEBUG"]   = "1"
+
+        // Suppress Mono/Gecko download popups — the stubs are handled by Wine builtins.
         env["WINEDLLOVERRIDES"] = "mscoree=d;mshtml=d"
 
-        // Enable winemac.drv clipboard sync with the macOS pasteboard.
-        // This wires up Ctrl+C/Ctrl+V inside Wine to sync with Cmd+C/Cmd+V on macOS.
+        // Enable winemac.drv pasteboard sync (Cmd+C / Cmd+V <-> Ctrl+C / Ctrl+V).
         env["WINE_DISABLE_FAST_XCOPY"] = "1"
 
-        // For .app-bundle style engines (Gcenx builds), add bundled lib paths so
-        // the wine binary can locate its shared libraries at runtime.
-        let wineLibDir = engine.localPath.appendingPathComponent("Contents/Resources/wine/lib").path
+        // Synchronisation primitives — both flags set simultaneously so D3DMetal
+        // (which reads WINEESYNC) behaves correctly under MSYNC (Whisky technique).
+        // MSYNC is a macOS-native futex replacement; significantly lower overhead
+        // than ESYNC especially on Apple Silicon.
+        env["WINEMSYNC"] = "1"
+        env["WINEESYNC"] = "1"
+
+        // For .app-bundle style engines (Gcenx builds), wire up the shared libraries.
+        let wineLibDir     = engine.localPath.appendingPathComponent("Contents/Resources/wine/lib").path
         let wineLibWineDir = engine.localPath.appendingPathComponent("Contents/Resources/wine/lib/wine").path
         if FileManager.default.fileExists(atPath: wineLibDir) {
-            let existing = env["DYLD_FALLBACK_LIBRARY_PATH"] ?? ""
-            env["DYLD_FALLBACK_LIBRARY_PATH"] = "\(wineLibDir):\(wineLibWineDir):\(existing)"
+            let existingFallback = env["DYLD_FALLBACK_LIBRARY_PATH"] ?? ""
+            env["DYLD_FALLBACK_LIBRARY_PATH"] = "\(wineLibDir):\(wineLibWineDir):\(existingFallback)"
         }
 
         // Apply backend-specific overrides
@@ -49,17 +60,21 @@ final class WineManager: ObservableObject {
             env[key] = value
         }
 
-        // DXVK / VKD3D need MoltenVK
+        // DXVK / VKD3D: prefer native (n) then builtin (b) for D3D DLLs, plus MoltenVK.
         if bottle.backend == .dxvk || bottle.backend == .vkd3d {
-            let libDir = engine.localPath.appendingPathComponent("Contents/Resources/wine/lib").path
+            let libDir   = engine.localPath.appendingPathComponent("Contents/Resources/wine/lib").path
             let existing = env["DYLD_LIBRARY_PATH"] ?? ""
             env["DYLD_LIBRARY_PATH"] = "\(libDir):\(existing)"
             env["MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"] = "1"
+            // Tell Wine to load native DXVK DLLs before its own builtins (Whisky pattern).
+            let dxvkOverrides = "dxgi,d3d9,d3d10core,d3d11=n,b"
+            let existing2 = env["WINEDLLOVERRIDES"] ?? ""
+            env["WINEDLLOVERRIDES"] = existing2.isEmpty ? dxvkOverrides : "\(existing2);\(dxvkOverrides)"
         }
 
-        // Force GPU rendering for DXMT/D3DMetal
+        // D3DMetal / DXMT: force GPU, disable software renderer fallback.
         if bottle.backend == .dxmt || bottle.backend == .d3dMetal {
-            env["MTL_HUD_ENABLED"] = "0"
+            env["MTL_HUD_ENABLED"]           = "0"
             env["CA_RENDERER_ALLOW_SOFTWARE"] = "NO"
         }
 
@@ -68,25 +83,37 @@ final class WineManager: ObservableObject {
 
     // MARK: - Prefix initialisation
 
-    /// Initialises a fresh WINEPREFIX for a bottle (runs `wineboot --init`).
+    /// Initialises a fresh WINEPREFIX for a bottle.
+    ///
+    /// Matches Whisky's technique: run `winecfg -v win10` which both triggers
+    /// Wine's prefix auto-creation AND sets the Windows compatibility version to
+    /// Windows 10 in a single step. Non-zero exits are tolerated — Wine can
+    /// exit non-zero during first-boot while still producing a valid prefix.
     func initPrefix(for bottle: Bottle, engine: WineEngine) async throws {
         let wineExe = resolvedWineBinary(engine: engine, useRosetta: bottle.useRosetta)
-        let env = environment(for: bottle, engine: engine)
+        var env = environment(for: bottle, engine: engine)
+        // Ensure Mono/Gecko dialogs are suppressed so init is non-interactive.
+        env["WINEDLLOVERRIDES"] = "mscoree=d;mshtml=d"
 
         try FileManager.default.createDirectory(at: bottle.prefixURL,
                                                 withIntermediateDirectories: true)
 
+        // winecfg -v win10: initialises the prefix AND sets Windows 10 compatibility.
+        // This is how Whisky creates every bottle.
         let runner = ProcessRunner(
             executableURL: wineExe,
-            arguments: ["wineboot", "--init"],
+            arguments: ["winecfg", "-v", "win10"],
             environment: env
         )
-        try await runner.run()
+        for await _ in try runner.stream() {}
     }
 
     // MARK: - Launch Windows executable
 
     /// Launches a `.exe` inside the given bottle and streams its output.
+    /// Used by the install wizard where streaming stdout/stderr to the console
+    /// is important. For launching already-installed apps, use `launchInstalledApp`
+    /// which routes through `wine start /unix` (the Whisky pattern).
     @discardableResult
     func launchExecutable(
         at exeURL: URL,
@@ -98,8 +125,6 @@ final class WineManager: ObservableObject {
         let env = environment(for: bottle, engine: engine)
 
         var args = [exeURL.path] + extraArgs
-        // On ARM64 with Rosetta, the `arch` wrapper handles the arch switch; wine is still the first
-        // process arg when we use the arch-wrapper exe path.
         if bottle.useRosetta && detector.isAppleSilicon {
             args = [engine.wineBinaryPath.path, exeURL.path] + extraArgs
         }
@@ -115,10 +140,17 @@ final class WineManager: ObservableObject {
         runningProcesses[sessionID] = runner
         outputLog[sessionID] = []
 
-        return try runner.stream()
+        return try runner.stream(logURL: makeLogURL(name: exeURL.lastPathComponent, bottle: bottle))
     }
 
-    /// Launches an installed library entry.
+    /// Launches an installed library entry using `wine start /unix <path>`.
+    ///
+    /// Using `start /unix` (Whisky's standard technique) routes the launch
+    /// through Wine's Windows `start.exe`, which handles working-directory
+    /// setup, file-association semantics, and Windows process startup correctly.
+    /// `start.exe` itself exits immediately; the actual app runs as a detached
+    /// Wine child process.
+    ///
     /// Supports direct executable paths and Steam game URIs (steam://rungameid/<id>).
     @discardableResult
     func launchInstalledApp(
@@ -128,22 +160,50 @@ final class WineManager: ObservableObject {
     ) throws -> AsyncStream<ProcessOutput> {
         if let appID = steamGameID(from: app.exePath) {
             let steamExe = try resolveSteamExecutable(in: bottle)
-            return try launchExecutable(
-                at: steamExe,
+            return try launchViaStart(
+                exeURL: steamExe,
                 bottle: bottle,
                 engine: engine,
                 extraArgs: steamLaunchArgs(appID: appID)
             )
         }
-        // Launching Steam itself directly — CEF sandbox must be disabled under Wine.
         let exeURL = URL(fileURLWithPath: app.exePath)
-        let extraArgs = isSteamExecutable(exeURL) ? ["-no-cef-sandbox"] : []
-        return try launchExecutable(
-            at: exeURL,
-            bottle: bottle,
-            engine: engine,
-            extraArgs: extraArgs
+        var extraArgs: [String] = []
+        if isSteamExecutable(exeURL) { extraArgs.append("-no-cef-sandbox") }
+        return try launchViaStart(exeURL: exeURL, bottle: bottle, engine: engine, extraArgs: extraArgs)
+    }
+
+    /// Launches an exe through `wine start /unix <path> [args]`.
+    /// This is the recommended launch pattern from Whisky — `start /unix`
+    /// handles Windows path semantics and detaches the child process cleanly.
+    @discardableResult
+    private func launchViaStart(
+        exeURL: URL,
+        bottle: Bottle,
+        engine: WineEngine,
+        extraArgs: [String] = []
+    ) throws -> AsyncStream<ProcessOutput> {
+        let wineExe = resolvedWineBinary(engine: engine, useRosetta: bottle.useRosetta)
+        let env = environment(for: bottle, engine: engine)
+
+        var args = ["start", "/unix", exeURL.path(percentEncoded: false)] + extraArgs
+        if bottle.useRosetta && detector.isAppleSilicon {
+            args = [engine.wineBinaryPath.path, "start", "/unix",
+                    exeURL.path(percentEncoded: false)] + extraArgs
+        }
+
+        let runner = ProcessRunner(
+            executableURL: wineExe,
+            arguments: args,
+            environment: env,
+            currentDirectoryURL: exeURL.deletingLastPathComponent()
         )
+
+        let sessionID = bottle.id
+        runningProcesses[sessionID] = runner
+        outputLog[sessionID] = []
+
+        return try runner.stream(logURL: makeLogURL(name: exeURL.lastPathComponent, bottle: bottle))
     }
 
     /// Opens a Windows shell desktop (explorer) inside the bottle.
@@ -225,6 +285,20 @@ final class WineManager: ObservableObject {
     private func steamGameID(from value: String) -> String? {
         guard value.lowercased().hasPrefix("steam://rungameid/") else { return nil }
         return value.components(separatedBy: "/").last?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    // MARK: - Logging
+
+    /// Returns a timestamped log URL under ~/Library/Logs/crossovr/ (Whisky pattern).
+    private func makeLogURL(name: String, bottle: Bottle) -> URL {
+        let logsDir = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)
+            .first!
+            .appendingPathComponent("Logs/crossovr")
+        try? FileManager.default.createDirectory(at: logsDir, withIntermediateDirectories: true)
+        let stamp = ISO8601DateFormatter().string(from: Date())
+            .replacingOccurrences(of: ":", with: "-")
+        let filename = "\(stamp)_\(bottle.name)_\(name).log"
+        return logsDir.appendingPathComponent(filename)
     }
 
     private func isSteamExecutable(_ url: URL) -> Bool {
