@@ -6,6 +6,18 @@ enum WindowsVMState: String, Codable, CaseIterable {
     case suspended
 }
 
+enum VMGuestOS: String, Codable, CaseIterable {
+    case windows11Arm
+    case linuxUbuntuArm
+
+    var displayName: String {
+        switch self {
+        case .windows11Arm: return "Windows 11 (ARM64)"
+        case .linuxUbuntuArm: return "Linux (Ubuntu ARM64)"
+        }
+    }
+}
+
 /// Persistent metadata for a real Windows VM configuration.
 struct WindowsVM: Codable, Identifiable, Hashable {
     var id: UUID
@@ -14,6 +26,7 @@ struct WindowsVM: Codable, Identifiable, Hashable {
     var diskImagePath: String
     var cpuCount: Int
     var memoryMB: Int
+    var guestOS: VMGuestOS
     var state: WindowsVMState
     var hasCompletedInstall: Bool
     var bootProfileVersion: Int
@@ -32,7 +45,8 @@ struct WindowsVM: Codable, Identifiable, Hashable {
         isoPath: String,
         diskImagePath: String,
         cpuCount: Int,
-        memoryMB: Int
+        memoryMB: Int,
+        guestOS: VMGuestOS = .windows11Arm
     ) {
         self.id = UUID()
         self.name = name
@@ -40,6 +54,7 @@ struct WindowsVM: Codable, Identifiable, Hashable {
         self.diskImagePath = diskImagePath
         self.cpuCount = cpuCount
         self.memoryMB = memoryMB
+        self.guestOS = guestOS
         self.state = .stopped
         self.hasCompletedInstall = false
         self.bootProfileVersion = 2
@@ -48,7 +63,7 @@ struct WindowsVM: Codable, Identifiable, Hashable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, isoPath, diskImagePath, cpuCount, memoryMB, state, hasCompletedInstall, bootProfileVersion, createdAt, lastBootedAt
+        case id, name, isoPath, diskImagePath, cpuCount, memoryMB, guestOS, state, hasCompletedInstall, bootProfileVersion, createdAt, lastBootedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -59,6 +74,7 @@ struct WindowsVM: Codable, Identifiable, Hashable {
         diskImagePath = try c.decode(String.self, forKey: .diskImagePath)
         cpuCount = try c.decode(Int.self, forKey: .cpuCount)
         memoryMB = try c.decode(Int.self, forKey: .memoryMB)
+        guestOS = try c.decodeIfPresent(VMGuestOS.self, forKey: .guestOS) ?? .windows11Arm
         state = try c.decode(WindowsVMState.self, forKey: .state)
         hasCompletedInstall = try c.decode(Bool.self, forKey: .hasCompletedInstall)
         bootProfileVersion = try c.decodeIfPresent(Int.self, forKey: .bootProfileVersion) ?? 1

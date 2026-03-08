@@ -109,7 +109,7 @@ struct RealWindowsView: View {
                     .foregroundStyle(.secondary)
                 Text("No Windows VM")
                     .font(.title3.bold())
-                Text("Create a VM to install real Windows 11.")
+                Text("Create a VM to install Windows or Linux.")
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -249,18 +249,32 @@ struct RealWindowsView: View {
         }
     }
 
-    private func createVM(name: String, iso: URL, diskGB: Int, cpu: Int, ram: Int) {
-        do {
-            let vm = try vmManager.createVM(
-                name: name,
-                isoURL: iso,
-                diskSizeGB: diskGB,
-                cpuCount: cpu,
-                memoryMB: ram
-            )
-            selectedVMID = vm.id
-        } catch {
-            vmManager.lastErrorMessage = error.localizedDescription
+    private func createVM(name: String, guestOS: VMGuestOS, iso: URL?, diskGB: Int, cpu: Int, ram: Int) {
+        Task {
+            do {
+                let resolvedISO: URL?
+                if guestOS == .linuxUbuntuArm, iso == nil {
+                    resolvedISO = try await vmManager.prepareLinuxInstallerISO()
+                } else {
+                    resolvedISO = iso
+                }
+
+                let vm = try vmManager.createVM(
+                    name: name,
+                    guestOS: guestOS,
+                    isoURL: resolvedISO,
+                    diskSizeGB: diskGB,
+                    cpuCount: cpu,
+                    memoryMB: ram
+                )
+                await MainActor.run {
+                    selectedVMID = vm.id
+                }
+            } catch {
+                await MainActor.run {
+                    vmManager.lastErrorMessage = error.localizedDescription
+                }
+            }
         }
     }
 

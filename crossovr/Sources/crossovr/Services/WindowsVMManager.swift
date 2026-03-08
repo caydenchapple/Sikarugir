@@ -10,6 +10,7 @@ final class WindowsVMManager: ObservableObject {
     @Published var lastErrorMessage: String?
     @Published private(set) var launchDiagnostics: [UUID: String] = [:]
     @Published var lastRecoveredVMID: UUID?
+    @Published private(set) var isPreparingLinuxISO = false
 
     private var runningRunners: [UUID: ProcessRunner] = [:]
     private var autoRecoveryAttempts: [UUID: Int] = [:]
@@ -20,6 +21,7 @@ final class WindowsVMManager: ObservableObject {
             .appendingPathComponent("crossovr")
             .appendingPathComponent("VMs")
     }()
+    private let ubuntuLinuxISOURL = URL(string: "https://cdimage.ubuntu.com/releases/24.04/release/ubuntu-24.04.2-live-server-arm64.iso")!
 
     private init() {
         loadAllVMs()
@@ -71,12 +73,27 @@ final class WindowsVMManager: ObservableObject {
 
     func createVM(
         name: String,
-        isoURL: URL,
+        guestOS: VMGuestOS,
+        isoURL: URL?,
         diskSizeGB: Int,
         cpuCount: Int,
         memoryMB: Int
     ) throws -> WindowsVM {
-        guard FileManager.default.fileExists(atPath: isoURL.path) else {
+        let resolvedISOURL: URL
+        switch guestOS {
+        case .windows11Arm:
+            guard let isoURL else {
+                throw NSError(domain: "WindowsVMManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Windows ISO is required."])
+            }
+            resolvedISOURL = isoURL
+        case .linuxUbuntuArm:
+            guard let isoURL else {
+                throw NSError(domain: "WindowsVMManager", code: 11, userInfo: [NSLocalizedDescriptionKey: "Linux ISO is not ready yet. Please wait for download."])
+            }
+            resolvedISOURL = isoURL
+        }
+
+        guard FileManager.default.fileExists(atPath: resolvedISOURL.path) else {
             throw NSError(domain: "WindowsVMManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "ISO file does not exist."])
         }
 
@@ -99,16 +116,43 @@ final class WindowsVMManager: ObservableObject {
 
         var vm = WindowsVM(
             name: name,
-            isoPath: isoURL.path,
+            isoPath: resolvedISOURL.path,
             diskImagePath: disk.path,
             cpuCount: cpuCount,
-            memoryMB: memoryMB
+            memoryMB: memoryMB,
+            guestOS: guestOS
         )
         vm.id = vmID
         try save(vm)
 
         vms.append(vm)
         return vm
+    }
+
+    func prepareLinuxInstallerISO() async throws -> URL {
+        let target = linuxISOCachePath()
+        if FileManager.default.fileExists(atPath: target.path) {
+            return target
+        }
+
+        try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+        isPreparingLinuxISO = true
+        defer { isPreparingLinuxISO = false }
+
+        let (tempURL, response) = try await URLSession.shared.download(from: ubuntuLinuxISOURL)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw NSError(
+                domain: "WindowsVMManager",
+                code: 12,
+                userInfo: [NSLocalizedDescriptionKey: "Failed downloading Ubuntu ISO (HTTP \(http.statusCode))."]
+            )
+        }
+        if FileManager.default.fileExists(atPath: target.path) {
+            try? FileManager.default.removeItem(at: tempURL)
+            return target
+        }
+        try FileManager.default.moveItem(at: tempURL, to: target)
+        return target
     }
 
     func start(_ vm: WindowsVM) {
@@ -212,6 +256,7 @@ final class WindowsVMManager: ObservableObject {
         let diskGB = max(40, Int((diskSizeBytes(for: current) / 1024 / 1024 / 1024)))
         let created = try createVM(
             name: current.name,
+            guestOS: current.guestOS,
             isoURL: rescueISO,
             diskSizeGB: diskGB,
             cpuCount: current.cpuCount,
@@ -325,10 +370,12 @@ final class WindowsVMManager: ObservableObject {
             args += ["-device", "ramfb"]
             args += ["-drive", "if=none,id=installer,file=\(installerISOPath),media=cdrom,readonly=on"]
             args += ["-device", "usb-storage,drive=installer,removable=true,bootindex=0"]
-            // Auto-attach an answer file that bypasses TPM/SecureBoot checks in setup.
-            let unattendedDir = try ensureUnattendedDirectory(for: workingVM)
-            args += ["-drive", "if=none,id=autounattend,file=fat:rw:\(unattendedDir.path),format=raw,readonly=on"]
-            args += ["-device", "usb-storage,drive=autounattend,removable=true,bootindex=3"]
+            if workingVM.guestOS == .windows11Arm {
+                // Auto-attach an answer file that bypasses TPM/SecureBoot checks in setup.
+                let unattendedDir = try ensureUnattendedDirectory(for: workingVM)
+                args += ["-drive", "if=none,id=autounattend,file=fat:rw:\(unattendedDir.path),format=raw,readonly=on"]
+                args += ["-device", "usb-storage,drive=autounattend,removable=true,bootindex=3"]
+            }
             args += ["-boot", "menu=on"]
         }
 
@@ -336,6 +383,7 @@ final class WindowsVMManager: ObservableObject {
             "QEMU: \(qemu)",
             "Firmware code: \(firmware.codePath)",
             "Firmware vars: \(varsPath)",
+            "Guest OS: \(workingVM.guestOS.displayName)",
             "Disk: \(workingVM.diskImagePath)",
             "Installer ISO: \(installerISOPath ?? "<none>")",
             "Args: \(args.joined(separator: " "))"
@@ -358,8 +406,7 @@ final class WindowsVMManager: ObservableObject {
         }
 
         // Stored ISO path can become stale after repair/recreate cycles.
-        // Auto-discover a likely Windows ISO and relink this VM.
-        guard let fallbackISO = discoverFallbackWindowsISO() else { return nil }
+        guard let fallbackISO = discoverFallbackISO(for: vm.guestOS) else { return nil }
         update(vm.id) { $0.isoPath = fallbackISO.path }
         return try? ensureLocalInstallISO(for: vm)
     }
@@ -523,7 +570,7 @@ final class WindowsVMManager: ObservableObject {
             try FileManager.default.copyItem(at: iso, to: rescue)
             return rescue
         }
-        if let fallback = discoverFallbackWindowsISO() {
+        if let fallback = discoverFallbackISO(for: vm.guestOS) {
             return fallback
         }
         throw NSError(
@@ -533,7 +580,7 @@ final class WindowsVMManager: ObservableObject {
         )
     }
 
-    private func discoverFallbackWindowsISO() -> URL? {
+    private func discoverFallbackISO(for guestOS: VMGuestOS) -> URL? {
         let fm = FileManager.default
         let downloads = fm.urls(for: .downloadsDirectory, in: .userDomainMask).first
         let searchRoots: [URL] = [downloads, vmsRoot].compactMap { $0 }
@@ -548,7 +595,14 @@ final class WindowsVMManager: ObservableObject {
 
             for url in items where url.pathExtension.lowercased() == "iso" {
                 let name = url.lastPathComponent.lowercased()
-                if name.contains("win") || name.contains("windows") || name.contains("arm") {
+                let isMatch: Bool
+                switch guestOS {
+                case .windows11Arm:
+                    isMatch = name.contains("win") || name.contains("windows") || name.contains("arm")
+                case .linuxUbuntuArm:
+                    isMatch = name.contains("ubuntu") || name.contains("linux") || name.contains("arm64")
+                }
+                if isMatch {
                     candidates.append(url)
                 }
             }
@@ -560,6 +614,14 @@ final class WindowsVMManager: ObservableObject {
             let r = (try? rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
             return l > r
         }.first
+    }
+
+    private func linuxISOCachePath() -> URL {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        return support
+            .appendingPathComponent("crossovr")
+            .appendingPathComponent("ISOs")
+            .appendingPathComponent("ubuntu-24.04.2-live-server-arm64.iso")
     }
 
     private func ensureUnattendedDirectory(for vm: WindowsVM) throws -> URL {

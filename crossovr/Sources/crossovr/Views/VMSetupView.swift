@@ -4,9 +4,10 @@ import AppKit
 
 struct VMSetupView: View {
     @Environment(\.dismiss) private var dismiss
-    let onCreate: (String, URL, Int, Int, Int) -> Void
+    let onCreate: (String, VMGuestOS, URL?, Int, Int, Int) -> Void
 
     @State private var name = "Windows 11"
+    @State private var guestOS: VMGuestOS = .windows11Arm
     @State private var isoURL: URL?
     @State private var diskGB: Int = 96
     @State private var cpuCount: Int = 4
@@ -17,7 +18,7 @@ struct VMSetupView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Create Real Windows VM")
+                Text("Create VM")
                     .font(.title2.bold())
                 Spacer()
             }
@@ -28,28 +29,42 @@ struct VMSetupView: View {
 
             Form {
                 Section("Quick Setup") {
+                    Picker("OS", selection: $guestOS) {
+                        ForEach(VMGuestOS.allCases, id: \.self) { os in
+                            Text(os.displayName).tag(os)
+                        }
+                    }
+
                     TextField("Name", text: $name)
                         .textFieldStyle(.roundedBorder)
 
-                    HStack {
-                        Text(isoURL?.lastPathComponent ?? "Choose Windows 11 ISO (one-time)")
-                            .foregroundStyle(isoURL == nil ? .secondary : .primary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Spacer()
-                        Button("Choose ISO…") { chooseISO() }
-                    }
-
-                    if isoURL == nil {
-                        Button {
-                            openWindowsISODownloadPage()
-                        } label: {
-                            Label("Download Windows ISO", systemImage: "arrow.down.circle")
+                    if guestOS == .windows11Arm {
+                        HStack {
+                            Text(isoURL?.lastPathComponent ?? "Choose Windows 11 ISO (one-time)")
+                                .foregroundStyle(isoURL == nil ? .secondary : .primary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer()
+                            Button("Choose ISO…") { chooseISO() }
                         }
-                        .buttonStyle(.bordered)
+
+                        if isoURL == nil {
+                            Button {
+                                openWindowsISODownloadPage()
+                            } label: {
+                                Label("Download Windows ISO", systemImage: "arrow.down.circle")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    } else {
+                        Label("Ubuntu ARM64 ISO will be downloaded automatically.", systemImage: "arrow.down.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
-                    Text("After you choose ISO once, future VMs only need name + Create.")
+                    Text(guestOS == .windows11Arm
+                         ? "After you choose ISO once, future VMs only need name + Create."
+                         : "Linux VM setup is one-click: name + Create.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -74,9 +89,9 @@ struct VMSetupView: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.bordered)
                 Button("Create VM") {
-                    guard let isoURL else { return }
                     onCreate(
                         name.trimmingCharacters(in: .whitespacesAndNewlines),
+                        guestOS,
                         isoURL,
                         diskGB,
                         cpuCount,
@@ -85,7 +100,10 @@ struct VMSetupView: View {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isoURL == nil)
+                .disabled(
+                    name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                    (guestOS == .windows11Arm && isoURL == nil)
+                )
             }
             .padding(16)
         }
@@ -97,6 +115,13 @@ struct VMSetupView: View {
                 if FileManager.default.fileExists(atPath: url.path) {
                     isoURL = url
                 }
+            }
+        }
+        .onChange(of: guestOS) { os in
+            if os == .linuxUbuntuArm {
+                name = "Ubuntu Linux"
+            } else if name == "Ubuntu Linux" {
+                name = "Windows 11"
             }
         }
     }
