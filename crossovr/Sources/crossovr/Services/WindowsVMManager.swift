@@ -325,6 +325,10 @@ final class WindowsVMManager: ObservableObject {
             args += ["-device", "ramfb"]
             args += ["-drive", "if=none,id=installer,file=\(installerISOPath),media=cdrom,readonly=on"]
             args += ["-device", "usb-storage,drive=installer,removable=true,bootindex=0"]
+            // Auto-attach an answer file that bypasses TPM/SecureBoot checks in setup.
+            let unattendedDir = try ensureUnattendedDirectory(for: workingVM)
+            args += ["-drive", "if=none,id=autounattend,file=fat:rw:\(unattendedDir.path),format=raw,readonly=on"]
+            args += ["-device", "usb-storage,drive=autounattend,removable=true,bootindex=3"]
             args += ["-boot", "menu=on"]
         }
 
@@ -556,6 +560,45 @@ final class WindowsVMManager: ObservableObject {
             let r = (try? rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
             return l > r
         }.first
+    }
+
+    private func ensureUnattendedDirectory(for vm: WindowsVM) throws -> URL {
+        let dir = vm.folderURL.appendingPathComponent("autounattend")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let xml = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <unattend xmlns="urn:schemas-microsoft-com:unattend">
+          <settings pass="windowsPE">
+            <component name="Microsoft-Windows-Setup" processorArchitecture="arm64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+              <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                  <Order>1</Order>
+                  <Path>reg add HKLM\\SYSTEM\\Setup\\LabConfig /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                  <Order>2</Order>
+                  <Path>reg add HKLM\\SYSTEM\\Setup\\LabConfig /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                  <Order>3</Order>
+                  <Path>reg add HKLM\\SYSTEM\\Setup\\LabConfig /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                  <Order>4</Order>
+                  <Path>reg add HKLM\\SYSTEM\\Setup\\LabConfig /v BypassCPUCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+                  <Order>5</Order>
+                  <Path>reg add HKLM\\SYSTEM\\Setup\\LabConfig /v BypassStorageCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+              </RunSynchronous>
+            </component>
+          </settings>
+        </unattend>
+        """
+        try xml.write(to: dir.appendingPathComponent("Autounattend.xml"), atomically: true, encoding: .utf8)
+        return dir
     }
 }
 

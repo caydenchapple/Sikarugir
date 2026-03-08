@@ -2,6 +2,7 @@
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/Bottle.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/GraphicsBackend.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsApp.swift
+/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WindowsVM.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Models/WineEngine.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppCatalogManager.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/AppUpdateService.swift
@@ -9,6 +10,7 @@
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/EngineDownloader.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/ProcessRunner.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/SystemDetector.swift
+/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WindowsVMManager.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Services/WineManager.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/AppInstallSheet.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/BottleDetailView.swift
@@ -18,5 +20,7 @@
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/GamesView.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/HomeView.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/InstallWizardView.swift
+/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/RealWindowsView.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/SettingsView.swift
+/Users/caydenchapple/crossovr/Sikarugir/crossovr/Sources/crossovr/Views/VMSetupView.swift
 /Users/caydenchapple/crossovr/Sikarugir/crossovr/.build/arm64-apple-macosx/release/crossovr.build/DerivedSources/resource_bundle_accessor.swift
